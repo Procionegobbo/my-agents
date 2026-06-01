@@ -13,7 +13,49 @@ This repo contains a set of Claude Code agents that cover the full lifecycle of 
 | `story-creator` | sonnet | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
 | `laravel-feature-builder` | opus | Implements a story end-to-end in a Laravel codebase |
 
-> **Note:** `laravel-feature-builder` is the first of a family of feature-builder agents. Future agents (`go-feature-builder`, `python-feature-builder`, `express-feature-builder`, etc.) will share the same folder structure and conventions and can be dropped in without changes to the other agents.
+> **Note:** `laravel-feature-builder` are the first of a family of feature-builder agents. Future agents (`python-feature-builder`, `express-feature-builder`, etc.) will share the same folder structure and conventions and can be dropped in without changes to the other agents.
+
+---
+
+## Installation
+
+Agent files (`.md`) must be placed in a specific directory so Claude Code can discover them automatically.
+
+### Option A — Project-specific (recommended)
+
+Use this when the agents are relevant to one repo only. The files are checked into version control and shared with the whole team.
+
+```
+your-repo/
+  .claude/
+    agents/
+      stories-init.md
+      spec-builder.md
+      story-creator.md
+      laravel-feature-builder.md
+```
+
+Copy the agent files from this repo into `.claude/agents/` at the root of the target project:
+
+```bash
+mkdir -p your-repo/.claude/agents
+cp *.md your-repo/.claude/agents/
+```
+
+### Option B — Global (personal use)
+
+Use this when you want the agents available across all your projects without adding them to each repo individually.
+
+```bash
+mkdir -p ~/.claude/agents
+cp *.md ~/.claude/agents/
+```
+
+### Activation
+
+Claude Code scans both locations automatically at session start — no configuration or CLAUDE.md entry is needed. If you add or edit an agent file while a session is already running, **restart the session** to pick up the changes.
+
+> **Important:** Each agent is identified by the `name` field in its frontmatter, not by its filename. Keep `name` values unique across all agents in the same scope to avoid silent conflicts.
 
 ---
 
@@ -97,7 +139,7 @@ The agent will:
 1. Read your draft.
 2. Explore the codebase to detect the framework, architecture patterns, naming conventions, and existing tests.
 3. Resolve any ambiguities using the codebase as precedent, or ask you for clarification if a decision cannot be inferred.
-4. Overwrite the draft with a complete specification that includes:
+4. Write a complete specification to a new `<name>-spec.md` file (e.g. `user-search.md` → `user-search-spec.md`), leaving your original draft untouched. The spec includes:
    - Feature name and description
    - Architecture / design overview
    - Configuration (if needed)
@@ -116,24 +158,25 @@ The resulting spec is self-contained: a developer who has never seen the draft c
 ### 4. Create user stories
 
 ```
-> Run story-creator on STORIES/SPECS/user-search.md
+> Run story-creator on STORIES/SPECS/user-search-spec.md
 ```
 
 The agent will:
 1. Read the completed specification.
-2. Check `STORIES/TODO/` and `STORIES/COMPLETED/` to determine the next available numeric prefix.
+2. Derive the spec name by stripping the `-spec` suffix (`user-search-spec.md` → `user-search`), then check `STORIES/TODO/` and `STORIES/COMPLETED/` for files sharing that prefix to determine the next available number for that spec.
 3. Break the feature into INVEST-compliant user stories, each with:
    - Standard *As a / I want / So that* format
    - Gherkin acceptance criteria (Given / When / Then)
+   - Explicit test cases the feature-builder must implement and pass
    - Story points and priority
    - Dependencies on other stories or infrastructure
-4. Save each story as a numbered markdown file in `STORIES/TODO/`.
+4. Save each story as a markdown file in `STORIES/TODO/`, named `<spec-name>-<number>-<story-name>.md`. Numbering is scoped per spec and starts at `001`.
 
-Example output:
+Example output (from a spec named `user-search`):
 ```
-STORIES/TODO/042-user-search-basic.md
-STORIES/TODO/043-user-search-filters.md
-STORIES/TODO/044-user-search-autocomplete.md
+STORIES/TODO/user-search-001-basic.md
+STORIES/TODO/user-search-002-filters.md
+STORIES/TODO/user-search-003-autocomplete.md
 ```
 
 ---
@@ -144,16 +187,17 @@ Pick a story from `STORIES/TODO/` and run the appropriate feature-builder for yo
 
 **Laravel:**
 ```
-> Run laravel-feature-builder on STORIES/TODO/042-user-search-basic.md
+> Run laravel-feature-builder on STORIES/TODO/user-search-001-basic.md
 ```
 
 The agent will:
 1. Read the story and acceptance criteria.
 2. Explore the codebase to align with the project's DDD structure, naming conventions, and existing patterns.
 3. Implement the feature end-to-end: migrations, models, controllers or Livewire components, form requests, services, routes, policies, and views.
-4. Suggest Pest test cases following the project's test conventions.
-5. Move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/`.
-6. Append an entry to `STORIES/COMPLETED.md`.
+4. Write and run tests covering every acceptance criterion and test case in the story, following the project's test conventions.
+5. Verify all acceptance criteria are met and all tests pass — the story is only moved once this gate passes.
+6. Move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/`.
+7. Append an entry to `STORIES/COMPLETED.md`.
 
 If requirements are ambiguous, the agent will ask clarifying questions before writing code.
 
@@ -169,8 +213,8 @@ If requirements are ambiguous, the agent will ask clarifying questions before wr
 > Run story-creator on the asset-collection spec
 
 # Implementation
-> Run laravel-feature-builder on STORIES/TODO/042-asset-collection-model.md
-> Run laravel-feature-builder on STORIES/TODO/043-asset-collection-crud.md
+> Run laravel-feature-builder on STORIES/TODO/asset-collection-001-model.md
+> Run laravel-feature-builder on STORIES/TODO/asset-collection-002-crud.md
 ```
 
 ---
@@ -187,9 +231,23 @@ The `stories-init`, `spec-builder`, and `story-creator` agents are stack-agnosti
 
 ---
 
+## Working in parallel
+
+The per-spec story numbering means multiple developers can work on different specs without filename collisions. To avoid stepping on each other in the working tree, follow a **branch-per-spec** convention:
+
+1. Before running `story-creator` (or a feature-builder) for a spec, create a branch named `story/<spec-name>` — e.g. `story/user-search`.
+2. Commit the generated stories, the implementation, and the `STORIES/` changes on that branch.
+3. Open a PR and merge as usual.
+
+Because story files are prefixed per spec, two branches never create files with the same name. The one shared file is `STORIES/COMPLETED.md`:
+
+- It is **append-only**, so a concurrent edit shows up as a merge conflict that is always resolved by **keeping both sides** (each branch's appended lines). Never delete the other branch's entries when resolving.
+
+---
+
 ## Notes
 
-- **Story numbering** — numeric prefixes are global across all features. The story-creator checks both `STORIES/TODO/` and `STORIES/COMPLETED/` to find the highest existing number and increments from there, so numbers never collide even when multiple features are in flight.
-- **Spec overwrites draft** — `spec-builder` replaces the draft in-place. If you want to preserve the original, duplicate the file before running the agent.
+- **Story numbering** — stories are named `<spec-name>-<number>-<story-name>.md`, and numbering is scoped per spec (each spec starts at `001`). The story-creator checks both `STORIES/TODO/` and `STORIES/COMPLETED/` for files sharing the same spec-name prefix to find the highest existing number for that spec and increments from there. Because numbers are per-spec, multiple developers can work on different specs in parallel without story-number conflicts.
+- **Spec preserves draft** — `spec-builder` always writes the specification to a new `<name>-spec.md` file and leaves your original draft untouched. The `-spec.md` file is what you pass to `story-creator`.
 - **COMPLETED.md is append-only** — feature-builder agents only append to this file. They never truncate or overwrite it.
 - **Git tracking** — `.gitkeep` files ensure the empty folders are committed. They can be removed once real files exist in each folder.

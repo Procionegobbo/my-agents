@@ -35,7 +35,7 @@ Do not produce a spec with unresolved blanks.
 
 ## Step 3 — Write the specification
 
-Produce a single markdown file saved back to `STORIES/SPECS/` with the same base name as the draft but overwriting it (or appending `-spec` if the user prefers a separate file — ask if unclear).
+Produce a single markdown file saved to `STORIES/SPECS/`, named `<draft-base-name>-spec.md` — always append the `-spec` suffix to the draft's base name (e.g. a draft `user-search.md` produces `user-search-spec.md`). Always write the spec to this separate file and leave the original draft untouched; never overwrite the draft. This `-spec.md` file is the input the `story-creator` agent consumes.
 
 The specification must include the sections below. Omit a section only if it is genuinely not applicable to the feature, and say so explicitly (e.g. *"No configuration required."*). Never silently skip a section.
 

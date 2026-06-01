@@ -22,23 +22,21 @@ STORIES/
 
 ## Steps
 
-1. **Check** whether the `STORIES/` folder already exists.
-   - If it does, inform the user and confirm before overwriting anything.
-   - If it does not, proceed with creation.
+This operation is **idempotent**: for each item below, create it only if it is missing, and never touch anything that already exists. This safely handles a fresh project, a fully set-up project (nothing to do), and a partially missing or corrupted structure (only the missing pieces are restored).
 
-2. **Create** the following folders:
+1. **Ensure** each of these folders exists, creating any that are missing:
    - `STORIES/SPECS/`
    - `STORIES/COMPLETED/`
    - `STORIES/TODO/`
 
-3. **Place** an empty `.gitkeep` file inside each of the three subfolders so they are tracked by Git.
+2. **Ensure** an empty `.gitkeep` file exists inside each of the three subfolders so they are tracked by Git. Create it only where missing.
 
-4. **Create** `STORIES/COMPLETED.md` as an empty file if it does not already exist. Never overwrite it if it already contains content.
+3. **Ensure** `STORIES/COMPLETED.md` exists, creating it as an empty file if missing. Never overwrite or truncate it if it already has content.
 
-5. **Confirm** the result by listing the created structure and letting the user know the workspace is ready for the story-creator agent.
+4. **Report** the result: list which items you created and which already existed, then confirm the workspace is ready for the story-creator agent.
 
 ## Rules
 
-- Never delete or overwrite existing files.
+- Never delete, overwrite, or truncate existing files — only create what is missing.
 - Never create files outside the `STORIES/` folder.
 - `COMPLETED.md` must only be created, never truncated.
