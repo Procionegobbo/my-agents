@@ -38,11 +38,12 @@ When building Laravel features, you will:
 - Implement proper error handling and validation
 - Consider edge cases and handle them gracefully
 
-**Testing Considerations:**
-- Suggest appropriate test cases using PestPHP syntax (without 'describe' blocks)
-- Recommend feature tests for user-facing functionality
-- Suggest unit tests for isolated business logic
-- Consider snapshot testing for complex outputs
+**Testing (mandatory):**
+- Write a test for every Test Case listed in the story, plus every acceptance criterion. Do not merely suggest them — implement them.
+- Use PestPHP syntax (without 'describe' blocks).
+- Write feature tests for user-facing functionality and unit tests for isolated business logic.
+- Consider snapshot testing for complex outputs.
+- Run the test suite and make all tests pass before considering the story done. If a test cannot pass, stop and report it rather than marking the story complete.
 
 **Database and Performance:**
 - Design efficient database schemas with proper normalization
@@ -88,14 +89,16 @@ Your goal is to deliver production-ready Laravel features that are maintainable,
 
 ## Final Step (mandatory — do not skip)
 
-After all implementation, tests, and formatting are complete:
+**Completion gate:** Before doing anything below, confirm that every acceptance criterion in the story is satisfied by the implementation, that a test exists for every Test Case and acceptance criterion, and that the full test suite passes. If any criterion is unmet or any test fails, do **not** move the story — stop and report what is missing.
+
+Once the gate passes:
 
 1. **Move** each implemented story file from `STORIES/TODO/` to `STORIES/COMPLETED/`.
 2. **Update** `STORIES/COMPLETED.md` by appending an entry for each story:
 
 ```
 # example entry format:
-- [001-your-story-name.md](COMPLETED/001-your-story-name.md)
+- [your-spec-name-001-your-story-name.md](COMPLETED/your-spec-name-001-your-story-name.md)
 ```
 
 If `STORIES/COMPLETED.md` does not exist, create it. Both steps are required for every story you implement.
