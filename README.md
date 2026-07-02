@@ -9,7 +9,7 @@ This repo contains a set of Claude Code agents that cover the full lifecycle of 
 | Agent | Model | Purpose |
 |---|---|---|
 | `stories-init` | haiku | One-time setup — creates the required folder structure |
-| `spec-builder` | sonnet | Expands a rough draft into a complete, implementation-ready specification |
+| `spec-builder` | opus | Expands a rough draft into a complete, implementation-ready specification |
 | `story-creator` | sonnet | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
 | `laravel-feature-builder` | opus | Implements a story end-to-end in a Laravel codebase |
 
@@ -67,7 +67,7 @@ Run this once per project, before using any other agent.
 The agent will:
 - Create `STORIES/SPECS/`, `STORIES/TODO/`, and `STORIES/COMPLETED/`, each with a `.gitkeep` so they are tracked by Git.
 - Create an empty `STORIES/COMPLETED.md` index file.
-- Skip creation and confirm with you if `STORIES/` already exists, to avoid overwriting anything.
+- Create only what is missing and never touch existing files, so it is safe to re-run on a complete or partial structure.
 
 ---
 
@@ -79,7 +79,7 @@ Create a new markdown file in `STORIES/SPECS/`. The filename should be short and
 STORIES/SPECS/user-search.md
 ```
 
-Your draft can be as rough as you like — bullet points, a paragraph, half-formed ideas. The spec-builder will ask for clarification if anything critical is missing. At minimum, describe:
+Your draft can be as rough as you like — bullet points, a paragraph, half-formed ideas. The spec-builder resolves anything missing using the codebase as precedent and records its choices in the spec's *Assumptions & Decisions* section for you to review. At minimum, describe:
 
 - What the feature does
 - Who it is for
@@ -96,9 +96,10 @@ Your draft can be as rough as you like — bullet points, a paragraph, half-form
 The agent will:
 1. Read your draft.
 2. Explore the codebase to detect the framework, architecture patterns, naming conventions, and existing tests.
-3. Resolve any ambiguities using the codebase as precedent, or ask you for clarification if a decision cannot be inferred.
+3. Resolve any ambiguities itself using the codebase as precedent, recording every judgment call in an *Assumptions & Decisions* section for you to review (it never blocks waiting for input).
 4. Overwrite the draft with a complete specification that includes:
    - Feature name and description
+   - Assumptions & decisions — every open point it resolved, with reasoning
    - Architecture / design overview
    - Configuration (if needed)
    - Data model (if needed)
@@ -107,6 +108,7 @@ The agent will:
    - Validation rules
    - Authorization and security
    - Testing — specific test cases, not just categories
+   - Suggested story breakdown — ordered vertical slices as a starting point for story-creator
    - Success criteria
 
 The resulting spec is self-contained: a developer who has never seen the draft can implement the feature from it alone.
@@ -121,13 +123,16 @@ The resulting spec is self-contained: a developer who has never seen the draft c
 
 The agent will:
 1. Read the completed specification.
-2. Check `STORIES/TODO/` and `STORIES/COMPLETED/` to determine the next available numeric prefix.
-3. Break the feature into INVEST-compliant user stories, each with:
+2. Follow the spec's *Suggested story breakdown* as the default slicing, adjusting only where a slice violates INVEST.
+3. Check `STORIES/TODO/` and `STORIES/COMPLETED/` to determine the next available numeric prefix.
+4. Break the feature into INVEST-compliant user stories, each with:
    - Standard *As a / I want / So that* format
+   - A `Spec:` reference back to the specification file
    - Gherkin acceptance criteria (Given / When / Then)
-   - Story points and priority
-   - Dependencies on other stories or infrastructure
-4. Save each story as a numbered markdown file in `STORIES/TODO/`.
+   - Technical notes — the spec fragments relevant to that slice (schema, validation rules, file paths)
+   - The spec's test cases belonging to that slice
+   - Priority and dependencies on other stories
+5. Save each story as a numbered markdown file in `STORIES/TODO/`.
 
 Example output:
 ```
@@ -148,14 +153,14 @@ Pick a story from `STORIES/TODO/` and run the appropriate feature-builder for yo
 ```
 
 The agent will:
-1. Read the story and acceptance criteria.
-2. Explore the codebase to align with the project's DDD structure, naming conventions, and existing patterns.
+1. Read the story, its acceptance criteria, and the spec referenced by its `Spec:` line.
+2. Explore the codebase to detect the project's architecture, naming conventions, and existing patterns.
 3. Implement the feature end-to-end: migrations, models, controllers or Livewire components, form requests, services, routes, policies, and views.
-4. Suggest Pest test cases following the project's test conventions.
-5. Move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/`.
-6. Append an entry to `STORIES/COMPLETED.md`.
+4. Write tests following the project's test conventions and run them until green, along with the formatter and static analysis if configured.
+5. Verify every acceptance criterion is satisfied.
+6. Only then: move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/` and append an entry to `STORIES/COMPLETED.md`. If something cannot be completed, the story stays in `STORIES/TODO/` and the agent reports exactly what failed.
 
-If requirements are ambiguous, the agent will ask clarifying questions before writing code.
+If requirements are ambiguous, the agent resolves them from the spec and codebase precedent and lists its judgment calls in the final report.
 
 ---
 
