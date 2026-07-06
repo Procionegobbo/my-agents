@@ -37,7 +37,9 @@ If the draft leaves critical decisions unresolved (data ownership, edge cases, p
 
 ## Step 3 — Write the specification
 
-Overwrite the draft file in place in `STORIES/SPECS/` (git preserves the original draft).
+Overwrite the draft file in place in `STORIES/SPECS/`.
+
+**Draft preservation:** before overwriting, check whether the draft is committed and unmodified (`git status` on the file). If it is, git preserves it and you can overwrite directly. If it is untracked or has uncommitted changes, first copy it to `<draft-base-name>.draft.md` alongside it so no work is lost, and mention the copy in your final report.
 
 The specification must include the sections below, in order. Omit a section only if it is genuinely not applicable to the feature, and say so explicitly (e.g. *"No configuration required."*). Never silently skip a section.
 

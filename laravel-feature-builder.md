@@ -38,6 +38,7 @@ You run autonomously: you cannot ask the user questions mid-run. Resolve ambigui
 - Run the tests for the areas you touched; fix and re-run until green. If a test cannot be made to pass, stop — do not mark the story complete.
 - Run the formatter (e.g. Pint) and static analysis (e.g. PHPStan/Larastan) if the project has them configured, and fix what they report.
 - Walk the story's acceptance criteria one by one and confirm each is satisfied by the implementation and covered by a test.
+- Finally, run the project's full test suite once (its standard test command) to catch regressions outside the areas you touched — migrations and shared-model changes can break distant tests. The story is not done while any test in the suite fails.
 
 ## Step 5 — Close out
 

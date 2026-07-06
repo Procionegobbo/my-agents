@@ -199,7 +199,7 @@ The agent will:
 2. Explore the codebase to detect the project's architecture, naming conventions, and existing patterns.
 3. Implement the feature end-to-end: migrations, models, controllers or Livewire components, form requests, services, routes, policies, and views.
 4. Write tests following the project's test conventions and run them until green, along with the formatter and static analysis if configured.
-5. Verify every acceptance criterion is satisfied.
+5. Verify every acceptance criterion is satisfied, then run the project's full test suite once to catch regressions outside the touched areas.
 6. Only then: move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/` and append an entry to `STORIES/COMPLETED.md`. If something cannot be completed, the story stays in `STORIES/TODO/` and the agent reports exactly what failed.
 
 If requirements are ambiguous, the agent resolves them from the spec and codebase precedent and lists its judgment calls in the final report.
@@ -251,6 +251,6 @@ Because story files are prefixed per spec, two branches never create files with 
 ## Notes
 
 - **Story numbering** — stories are named `<spec-name>-<number>-<story-name>.md`, and numbering is scoped per spec (each spec starts at `001`). The story-creator checks both `STORIES/TODO/` and `STORIES/COMPLETED/` for files sharing the same spec-name prefix to find the highest existing number for that spec and increments from there. Because numbers are per-spec, multiple developers can work on different specs in parallel without story-number conflicts.
-- **Spec overwrites draft** — `spec-builder` replaces the draft in-place. If you want to preserve the original, duplicate the file before running the agent.
+- **Spec overwrites draft** — `spec-builder` replaces the draft in-place. If the draft is committed and unmodified, git preserves the original; otherwise the agent first copies it to `<name>.draft.md` so no work is lost.
 - **COMPLETED.md is append-only** — feature-builder agents only append to this file. They never truncate or overwrite it.
 - **Git tracking** — `.gitkeep` files ensure the empty folders are committed. They can be removed once real files exist in each folder.

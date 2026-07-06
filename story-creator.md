@@ -37,7 +37,7 @@ The user will tell you which spec file to process. It will be located in `STORIE
 Use exactly this structure for every story:
 
 ```markdown
-# [Story Title]
+# <spec-name>-<number>-<story-title>
 
 **Spec:** STORIES/SPECS/<spec-file>.md
 
@@ -80,6 +80,7 @@ Check your output against this list and fix anything that fails:
 - [ ] Every acceptance criterion and test case from the spec is mapped to exactly one story.
 - [ ] Numbering continues correctly from the highest matching `<spec-name>-<number>-` prefix in `STORIES/TODO/` and `STORIES/COMPLETED/`.
 - [ ] Every story has the Spec reference, Gherkin criteria, Technical Notes, Tests, Priority, and Dependencies.
+- [ ] Every story's H1 title matches its filename (minus `.md`).
 - [ ] Dependencies only reference lower-numbered stories from the same spec.
 
 ## Final report
