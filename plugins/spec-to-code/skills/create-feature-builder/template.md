@@ -34,15 +34,11 @@ The hints below were captured when this agent was generated (verified {{DATE}}) 
 
 ## Step 3 — Implement
 
-Implement each concern the way the precedent features do it:
-
-- **Persistence**: design efficient, normalized storage with the appropriate constraints and indexes; avoid inefficient access patterns (e.g. N+1).
-- **Input validation**: validate all user input using the project's existing validation mechanism, kept separate from business logic.
-- **Authorization**: enforce access control through the project's existing mechanism for every action the story exposes.
-- **View / interface layer**: build the user-facing surface (UI, API response, CLI output — whatever this story targets) matching the existing approach.
-- Follow the project's code style. Where the project shows no preference, default to: early returns over compound conditionals, minimal `else`, explicit types, and the language's standard conventions.
+Implement the story following the precedent features you read in Step 2 — reuse their structure, naming, and layering rather than introducing new patterns. The stack-specific guidance below is how this project handles each relevant concern (persistence, input validation, authorization, and the interface layer); where it says a concern does not apply here, do not add it.
 
 {{FRAMEWORK_IMPL_NOTES}}
+
+Follow the project's code style. Where the project shows no preference, default to: early returns over compound conditionals, minimal `else`, explicit types, and the language's standard conventions.
 
 **Simplicity rule:** implement exactly what the story specifies. Introduce an architectural layer (repositories, events, queues, caching, etc.) only when the spec calls for it or the codebase already uses that pattern for similar features. Never introduce a layer the project doesn't have.
 
