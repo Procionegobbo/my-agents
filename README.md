@@ -1,6 +1,6 @@
 # Agents — Developer Guide
 
-This repo contains a set of Claude Code agents that cover the full lifecycle of a feature: from rough idea to implemented code. The agents are designed to work together in a defined sequence, each handing off to the next.
+This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus a skill that cover the full lifecycle of a feature: from rough idea to implemented code. The agents are designed to work together in a defined sequence, each handing off to the next. The repo doubles as its own plugin **marketplace** (`my-agents`), so it can be installed with one command.
 
 ---
 
@@ -21,53 +21,41 @@ This repo contains a set of Claude Code agents that cover the full lifecycle of 
 |---|---|
 | `create-feature-builder` | Generates a `<stack>-feature-builder` agent tailored to the current repo — detects the stack, explores the codebase, and writes the agent into `.claude/agents/`. Automates the manual process described in *Adding a new feature-builder*. |
 
-Invoke it as a slash command: `/create-feature-builder`.
+Invoke it as a slash command. Installed as a plugin, skills are namespaced: `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, it is `/create-feature-builder`.
 
 ---
 
 ## Installation
 
-Agent files (`.md`) must be placed in a specific directory so Claude Code can discover them automatically.
+### Option A — Plugin (recommended)
 
-### Option A — Project-specific (recommended)
-
-Use this when the agents are relevant to one repo only. The files are checked into version control and shared with the whole team.
+Install the whole pipeline (all agents + the skill) in one step. This gives you versioned, updatable installs and works across every project.
 
 ```
-your-repo/
-  .claude/
-    agents/
-      stories-init.md
-      spec-builder.md
-      story-creator.md
-      laravel-feature-builder.md
-    skills/
-      create-feature-builder/
-        SKILL.md
-        template.md
+/plugin marketplace add Procionegobbo/my-agents
+/plugin install spec-to-code@my-agents
 ```
 
-Copy the agent files and the skill folder from this repo into the target project:
+Update later with `/plugin marketplace update my-agents`, then `/plugin update spec-to-code`.
+
+> **Note:** plugin skills are namespaced (`/spec-to-code:create-feature-builder`). Plugin agents keep their frontmatter `name` (`spec-builder`, `laravel-feature-builder`, …) and are invoked the same way as before. A same-named agent in the project's own `.claude/agents/` overrides the plugin's version.
+
+### Option B — Manual copy
+
+Use this when you want the files checked into a specific repo (or your global `~/.claude/`) without the plugin system. Copy from `plugins/spec-to-code/` in this repo:
 
 ```bash
+# into a project (or swap the target for ~/.claude)
 mkdir -p your-repo/.claude/agents your-repo/.claude/skills
-cp stories-init.md spec-builder.md story-creator.md laravel-feature-builder.md your-repo/.claude/agents/
-cp -r create-feature-builder your-repo/.claude/skills/
+cp plugins/spec-to-code/agents/*.md your-repo/.claude/agents/
+cp -r plugins/spec-to-code/skills/create-feature-builder your-repo/.claude/skills/
 ```
 
-### Option B — Global (personal use)
-
-Use this when you want the agents available across all your projects without adding them to each repo individually.
-
-```bash
-mkdir -p ~/.claude/agents ~/.claude/skills
-cp stories-init.md spec-builder.md story-creator.md laravel-feature-builder.md ~/.claude/agents/
-cp -r create-feature-builder ~/.claude/skills/
-```
+Copied this way the skill is invoked as `/create-feature-builder` (no namespace).
 
 ### Activation
 
-Claude Code scans both locations automatically at session start — no configuration or CLAUDE.md entry is needed. If you add or edit an agent or skill file while a session is already running, **restart the session** to pick up the changes.
+Claude Code discovers plugins, agents, and skills at session start — no configuration or CLAUDE.md entry is needed. If you install a plugin or add/edit an agent or skill file while a session is already running, **restart the session** (or run `/reload-plugins` for plugin changes) to pick them up.
 
 > **Important:** Each agent is identified by the `name` field in its frontmatter, not by its filename. Keep `name` values unique across all agents in the same scope to avoid silent conflicts.
 
@@ -241,8 +229,10 @@ If requirements are ambiguous, the agent resolves them from the spec and codebas
 To support a new language or framework, run the `create-feature-builder` skill in the target repo:
 
 ```
-> /create-feature-builder
+/spec-to-code:create-feature-builder
 ```
+
+(Or `/create-feature-builder` if you installed via manual copy.)
 
 The skill detects the stack from the project's config files (asking you to confirm), explores the codebase for its test command, formatter, architecture, and precedent features, then writes a `<stack>-feature-builder.md` agent into `.claude/agents/` — tailored to that repo and following the same conventions as `laravel-feature-builder.md`. **Restart the session** afterwards so Claude Code discovers the new agent.
 
