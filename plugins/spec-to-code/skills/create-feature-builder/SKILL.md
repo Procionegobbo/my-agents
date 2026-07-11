@@ -89,9 +89,8 @@ placeholder verbatim:
 - **Model**: keep `opus`.
 
 **Self-validation (mandatory) before finishing:**
-- The frontmatter parses as valid YAML and all four fields are present: `name`, `description`, `model`, `color`. Keep `description` a **double-quoted** scalar (the template already is) and escape any `"` you introduce as `\"` — an unquoted description with a `: ` in it silently drops the whole frontmatter at load time.
-- No leftover `{{` tokens anywhere in the file (grep for `{{`).
-- If Claude Code is on the machine, run `claude plugin validate` on the agent's directory as a final check.
+- Re-read the generated file and confirm the frontmatter is valid YAML with all four fields present: `name`, `description`, `model`, `color`. Keep `description` a **double-quoted** scalar (the template already is) and escape any `"` you introduce as `\"` — an unquoted description with a `: ` in it silently drops the whole frontmatter at load time.
+- Grep the file for `{{` and confirm no placeholder tokens remain.
 - Fix any failure before reporting done.
 
 ## Phase 5 — Report
