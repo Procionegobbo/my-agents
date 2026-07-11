@@ -31,9 +31,10 @@ STORIES/
    - An empty `.gitkeep` file inside each of the three subfolders so they are tracked by Git.
    - An empty `STORIES/COMPLETED.md` index file.
 
-3. **Report** the result: list what you created and what already existed, and confirm the workspace is ready for the spec-builder and story-creator agents.
+3. **Report** the result: list only what you created and what already existed, and confirm the workspace is ready for the spec-builder and story-creator agents. You may end with the generic next steps (draft → spec-builder → story-creator → the feature-builder for the project's stack). If no feature-builder matches the stack, note that one can be generated with the `create-feature-builder` skill — keep this stack-agnostic, never naming or assuming a specific language or framework.
 
 ## Rules
 
 - Never delete, overwrite, or truncate existing files or folders — including `COMPLETED.md`, which may already contain entries.
 - Never create files outside the `STORIES/` folder.
+- Stay strictly within this task. Do not inspect, identify, or guess the project's language, framework, or libraries, and never state what stack the project uses — you have no reliable basis for it, and getting it wrong misleads the user. Your report covers only the folders and files you created and the generic next steps.
