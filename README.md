@@ -13,7 +13,15 @@ This repo contains a set of Claude Code agents that cover the full lifecycle of 
 | `story-creator` | sonnet | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
 | `laravel-feature-builder` | opus | Implements a story end-to-end in a Laravel codebase |
 
-> **Note:** `laravel-feature-builder` is the first of a family of feature-builder agents. Future agents (`go-feature-builder`, `python-feature-builder`, `express-feature-builder`, etc.) will share the same folder structure and conventions and can be dropped in without changes to the other agents.
+> **Note:** `laravel-feature-builder` is the first of a family of feature-builder agents. Future agents (`go-feature-builder`, `python-feature-builder`, `express-feature-builder`, etc.) share the same folder structure and conventions and can be dropped in without changes to the other agents.
+
+## Skills
+
+| Skill | Purpose |
+|---|---|
+| `create-feature-builder` | Generates a `<stack>-feature-builder` agent tailored to the current repo — detects the stack, explores the codebase, and writes the agent into `.claude/agents/`. Automates the manual process described in *Adding a new feature-builder*. |
+
+Invoke it as a slash command: `/create-feature-builder`.
 
 ---
 
@@ -33,13 +41,18 @@ your-repo/
       spec-builder.md
       story-creator.md
       laravel-feature-builder.md
+    skills/
+      create-feature-builder/
+        SKILL.md
+        template.md
 ```
 
-Copy the agent files from this repo into `.claude/agents/` at the root of the target project:
+Copy the agent files and the skill folder from this repo into the target project:
 
 ```bash
-mkdir -p your-repo/.claude/agents
-cp *.md your-repo/.claude/agents/
+mkdir -p your-repo/.claude/agents your-repo/.claude/skills
+cp stories-init.md spec-builder.md story-creator.md laravel-feature-builder.md your-repo/.claude/agents/
+cp -r create-feature-builder your-repo/.claude/skills/
 ```
 
 ### Option B — Global (personal use)
@@ -47,13 +60,14 @@ cp *.md your-repo/.claude/agents/
 Use this when you want the agents available across all your projects without adding them to each repo individually.
 
 ```bash
-mkdir -p ~/.claude/agents
-cp *.md ~/.claude/agents/
+mkdir -p ~/.claude/agents ~/.claude/skills
+cp stories-init.md spec-builder.md story-creator.md laravel-feature-builder.md ~/.claude/agents/
+cp -r create-feature-builder ~/.claude/skills/
 ```
 
 ### Activation
 
-Claude Code scans both locations automatically at session start — no configuration or CLAUDE.md entry is needed. If you add or edit an agent file while a session is already running, **restart the session** to pick up the changes.
+Claude Code scans both locations automatically at session start — no configuration or CLAUDE.md entry is needed. If you add or edit an agent or skill file while a session is already running, **restart the session** to pick up the changes.
 
 > **Important:** Each agent is identified by the `name` field in its frontmatter, not by its filename. Keep `name` values unique across all agents in the same scope to avoid silent conflicts.
 
@@ -224,13 +238,17 @@ If requirements are ambiguous, the agent resolves them from the spec and codebas
 
 ## Adding a new feature-builder
 
-To support a new language or framework, create a new agent file following the same conventions as `laravel-feature-builder.md`:
+To support a new language or framework, run the `create-feature-builder` skill in the target repo:
 
-1. Name it `<stack>-feature-builder.md`.
-2. Use the same frontmatter fields (`name`, `description`, `model`, `color`).
-3. Instruct it to read stories from `STORIES/TODO/`, implement the feature, move the story to `STORIES/COMPLETED/`, and append to `STORIES/COMPLETED.md`.
+```
+> /create-feature-builder
+```
+
+The skill detects the stack from the project's config files (asking you to confirm), explores the codebase for its test command, formatter, architecture, and precedent features, then writes a `<stack>-feature-builder.md` agent into `.claude/agents/` — tailored to that repo and following the same conventions as `laravel-feature-builder.md`. **Restart the session** afterwards so Claude Code discovers the new agent.
 
 The `stories-init`, `spec-builder`, and `story-creator` agents are stack-agnostic and require no changes.
+
+> Prefer to write it by hand? Copy `laravel-feature-builder.md`, rename it `<stack>-feature-builder.md`, keep the same frontmatter fields (`name`, `description`, `model`, `color`), and adapt the stack-specific steps. Keep Step 5 and the final report identical — they are pipeline invariants shared across all feature-builders.
 
 ---
 
