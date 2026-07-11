@@ -1,0 +1,11 @@
+{
+  "name": "spec-to-code",
+  "description": "Agent pipeline that takes a feature from rough draft to implemented, tested code: stories-init, spec-builder, story-creator, and per-stack feature-builders, plus a create-feature-builder skill that scaffolds a feature-builder for any stack.",
+  "version": "3.0.0",
+  "author": {
+    "name": "Federico Maiorini"
+  },
+  "homepage": "https://github.com/Procionegobbo/my-agents",
+  "repository": "https://github.com/Procionegobbo/my-agents",
+  "license": "CC0-1.0"
+}

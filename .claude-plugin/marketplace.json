@@ -1,0 +1,14 @@
+{
+  "name": "my-agents",
+  "description": "Agents and skills for a spec-and-story-driven feature development pipeline.",
+  "owner": {
+    "name": "Procionegobbo"
+  },
+  "plugins": [
+    {
+      "name": "spec-to-code",
+      "source": "./plugins/spec-to-code",
+      "description": "Idea-to-code agent pipeline: stories-init, spec-builder, story-creator, per-stack feature-builders, and the create-feature-builder skill."
+    }
+  ]
+}
