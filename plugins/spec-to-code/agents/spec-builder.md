@@ -116,12 +116,22 @@ Before you finish, check the spec against this list and fix anything that fails:
 - [ ] Every required section is present, or explicitly marked not applicable.
 - [ ] The spec is self-contained: a developer who has never read the draft can implement the feature from the spec alone.
 
+### Regression-risk review
+
+The spec has no code to test, so "regression" here means: would the changes the spec proposes to **existing** code break behaviour that already works? Walk every entry in **Impact on Existing Code** that modifies (not just adds) a file, and for each confirm one of two things is true — and make the spec say which:
+
+- The change is **additive / backward-compatible** — it preserves the current contract (function signature, endpoint request/response shape, DB column semantics, event payload, shared-utility behaviour) so existing callers and features keep working.
+- The change is a **deliberate breaking change** — in which case the spec must call it out explicitly, name the existing callers/features it affects, and describe the migration or compatibility path (data migration, deprecation, updating call sites). A silent breaking change is a bug in the spec.
+
+Pay special attention to anything shared across features: shared models/schema and migrations, common base classes or utilities, auth/permission rules, and public API or event contracts. If you cannot rule out a regression for a modified target, add it to **Assumptions & Decisions** as an open risk rather than leaving it implicit.
+
 ## Final report
 
 End your run by reporting back:
 1. A one-paragraph summary of the feature as specced.
 2. The list of assumptions and decisions you made (so the user can review them without opening the file).
-3. The path of the spec file.
+3. Any breaking changes or regression risks the spec introduces to existing code (from the regression-risk review), or "none" if the changes are all additive.
+4. The path of the spec file.
 
 ## Output rules
 

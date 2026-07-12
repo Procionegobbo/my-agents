@@ -18,10 +18,31 @@ The agent is written from `template.md` (sibling of this file). You fill its pla
 with values discovered in the target repo. Run this skill inline so you can confirm the
 stack with the user before generating — a subagent could not.
 
+## Optional argument — scope to a subfolder
+
+The skill accepts an optional **target subfolder** (e.g. the user says "for `server/`" or
+passes it as the argument). When present, treat that folder as the project root for
+**everything**: stack detection, exploration, discovered paths, and the commands baked into
+the generated agent. Use it for **monorepos** where each service has its own stack and there
+is no single root config.
+
+When a scope folder is given:
+- Detect and explore **only inside that folder** (Phase 1 and 2). Ignore config in sibling
+  services and at the repo root.
+- Record it as `{{SCOPE_ROOT}}` and make the generated agent operate within it — its commands
+  run from that folder and its discovered paths are relative to it.
+- Expect to generate **several builders** in a monorepo, so disambiguate the name: propose a
+  name derived from the service folder (e.g. `server-feature-builder`,
+  `discord-bot-feature-builder`) rather than the bare stack, and **ask the user to confirm or
+  override** before generating.
+
+When no folder is given, behave exactly as before: detect from the repo root and set
+`{{SCOPE_ROOT}}` to the repo root (`.`).
+
 ## Phase 1 — Detect the stack
 
-Read the root config files and identify the framework from actual dependencies, not just
-file presence:
+Read the config files **at the scope root** (repo root, or the target subfolder if one was
+given) and identify the framework from actual dependencies, not just file presence:
 
 - `composer.json` → check `require` for `laravel/framework`, `symfony/*`, etc.
 - `package.json` → check dependencies for `express`, `next`, `@nestjs/*`, `react`, etc.
@@ -37,8 +58,9 @@ file presence:
 
 ## Phase 2 — Explore the repo (tiered specialization)
 
-Explore like `spec-builder` Step 1, proportional to what the template needs. Capture two
-tiers of values:
+Explore like `spec-builder` Step 1, proportional to what the template needs, **confined to
+the scope root** if one was given. Capture two tiers of values (paths recorded relative to
+the scope root):
 
 **Authoritative (stable) — hardcode as directives:**
 - Test command (e.g. `composer test`, `./vendor/bin/pest`, `pytest`, `go test ./...`, `npm test`).
@@ -56,29 +78,35 @@ template already implies, and note "not configured" rather than inventing one.
 
 ## Phase 3 — Check collisions
 
-- If `.claude/agents/<stack>-feature-builder.md` **already exists**, treat this run as a
+- The collision check uses the **confirmed agent name** (`<stack>-feature-builder`, or the
+  service-scoped name from the optional-argument step). In a monorepo, a same-stack builder
+  for a *different* service is not a refresh — it's a distinct agent, which is exactly why the
+  scoped name disambiguates it.
+- If `.claude/agents/<name>.md` **already exists** for the same target, treat this run as a
   **refresh**: regenerate it, summarize what changed (new test command, moved paths), and
   ask the user to confirm before overwriting.
-- Also check `~/.claude/agents/<stack>-feature-builder.md`. Agent `name` fields must be
-  unique across scopes, so on a global collision warn the user or offer a distinct name.
+- Also check `~/.claude/agents/<name>.md`. Agent `name` fields must be unique across scopes,
+  so on a global collision warn the user or offer a distinct name.
 - A missing `STORIES/` structure does **not** block generation (it's only needed when the
   generated agent runs). If it's absent, suggest running `stories-init`.
 
 ## Phase 4 — Generate the agent
 
-Read `template.md` and write `.claude/agents/<stack>-feature-builder.md`, filling every
+Read `template.md` and write `.claude/agents/<agent-slug>-feature-builder.md`, filling every
 placeholder verbatim:
 
 | Placeholder | Value |
 |---|---|
-| `{{STACK}}` | confirmed stack name (also the filename prefix) |
+| `{{AGENT_SLUG}}` | the confirmed agent name prefix and filename — the bare stack (`express`) when unscoped, or the service-scoped name (`server`) confirmed with the user in a monorepo |
+| `{{STACK}}` | the framework/language label used in prose (`Express`, `Node.js`, `Django`) — stays the technical stack even when `{{AGENT_SLUG}}` is service-scoped |
+| `{{SCOPE_ROOT}}` | the folder the agent operates within — the target subfolder (e.g. `server`) when scoped, or `.` (repo root) when not |
 | `{{COLOR}}` | see below |
 | `{{DATE}}` | today's date, `YYYY-MM-DD` |
-| `{{CONFIG_FILES}}` | the config files that declare the stack |
+| `{{CONFIG_FILES}}` | the config files (under the scope root) that declare the stack |
 | `{{TEST_FRAMEWORK}}` / `{{FORMATTER}}` / `{{STATIC_ANALYSIS}}` | tools observed |
-| `{{TEST_COMMAND}}` / `{{FORMATTER_COMMAND}}` / `{{STATIC_ANALYSIS_COMMAND}}` | authoritative commands |
+| `{{TEST_COMMAND}}` / `{{FORMATTER_COMMAND}}` / `{{STATIC_ANALYSIS_COMMAND}}` | authoritative commands, written to run from the scope root (e.g. `npm test`, since the agent runs them inside `{{SCOPE_ROOT}}`) |
 | `{{ARCHITECTURE}}` | detected architecture |
-| `{{DISCOVERED_PATHS}}` | real layer paths (seed hints) |
+| `{{DISCOVERED_PATHS}}` | real layer paths, relative to the scope root (seed hints) |
 | `{{SIMILAR_FEATURES}}` | 2–3 precedent features to read |
 | `{{FRONTEND}}` / `{{AUTH_MECHANISM}}` | detected approaches |
 | `{{FRAMEWORK_IMPL_NOTES}}` | concern-level bullets for this stack (persistence / validation / authorization / view layer) — **not** Laravel vocabulary like migrations or form requests unless this *is* Laravel |
@@ -97,5 +125,6 @@ placeholder verbatim:
 
 Report back:
 1. The generated file and its path.
-2. The hardcoded specifics (test / formatter / static-analysis commands, key paths).
-3. That the user must **restart the Claude Code session** for the new agent to be discovered.
+2. The scope it was tailored to (`{{SCOPE_ROOT}}`) when a subfolder was given.
+3. The hardcoded specifics (test / formatter / static-analysis commands, key paths).
+4. That the user must **restart the Claude Code session** for the new agent to be discovered.
