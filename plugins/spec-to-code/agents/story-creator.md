@@ -78,6 +78,7 @@ The spec's test cases that belong to this slice.
 Check your output against this list and fix anything that fails:
 
 - [ ] Every acceptance criterion and test case from the spec is mapped to exactly one story.
+- [ ] **Faithful to the spec:** re-read each story against the spec section it comes from and confirm the Gherkin and Technical Notes preserve the spec's *intent* — same behaviour, entities, validation rules, and authorization boundaries — with no paraphrase that changes meaning, no added scope, and no dropped constraint. The mapping above proves coverage; this proves the wording didn't drift.
 - [ ] Numbering continues correctly from the highest matching `<spec-name>-<number>-` prefix in `STORIES/TODO/` and `STORIES/COMPLETED/`.
 - [ ] Every story has the Spec reference, Gherkin criteria, Technical Notes, Tests, Priority, and Dependencies.
 - [ ] Every story's H1 title matches its filename (minus `.md`).
