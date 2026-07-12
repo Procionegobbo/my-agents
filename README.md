@@ -236,6 +236,16 @@ To support a new language or framework, run the `create-feature-builder` skill i
 
 The skill detects the stack from the project's config files (asking you to confirm), explores the codebase for its test command, formatter, architecture, and precedent features, then writes a `<stack>-feature-builder.md` agent into `.claude/agents/` — tailored to that repo and following the same conventions as `laravel-feature-builder.md`. **Restart the session** afterwards so Claude Code discovers the new agent.
 
+### Monorepos — scoping to a subfolder
+
+By default the skill detects the stack from the repository root. In a **monorepo** where each service has its own stack (and there may be no root config), pass the target subfolder and the skill confines everything — stack detection, exploration, the generated agent's paths and commands — to that folder:
+
+```
+/spec-to-code:create-feature-builder for server/
+```
+
+Because a monorepo produces several builders, the skill proposes a per-service name (e.g. `server-feature-builder`) and asks you to confirm it, so builders for different services don't collide. Run it once per service you want to support.
+
 The `stories-init`, `spec-builder`, and `story-creator` agents are stack-agnostic and require no changes.
 
 > Prefer to write it by hand? Copy `laravel-feature-builder.md`, rename it `<stack>-feature-builder.md`, keep the same frontmatter fields (`name`, `description`, `model`, `color`), and adapt the stack-specific steps. Keep Step 5 and the final report identical — they are pipeline invariants shared across all feature-builders.
