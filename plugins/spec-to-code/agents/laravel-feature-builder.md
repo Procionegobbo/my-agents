@@ -57,19 +57,20 @@ Your implementation gets a second pair of eyes from **code-reviewer**, a separat
 
 Which path you take depends on your invoking prompt:
 
-**A — a review will follow** (your prompt says an independent review will follow, or that you are running under the `run-stage` skill):
+**A — your prompt contains the literal marker `[run-stage:review-follows]`:**
 
 1. Finish Step 4 completely — the full suite must be green before the reviewer sees the code.
 2. **Stop before close-out. Do not move the story out of `STORIES/TODO/` and do not touch `COMPLETED.md`.** Close-out is gated on the review passing, and you do not yet know the verdict.
-3. Write your final report and end your run. State plainly that the story is implemented, the suite is green, and it is awaiting review — and that it remains in `STORIES/TODO/`.
+3. Write your final report and end your run. State plainly that the story is implemented, the suite is green, and it is awaiting review — that it remains in `STORIES/TODO/` until the caller relays a verdict, and that re-running `run-stage` on this story is what unparks it if no verdict ever arrives.
 4. You will likely receive a follow-up message. It will either:
    - carry the reviewer's issues split into BLOCKING and NON-BLOCKING — fix every blocking issue (and non-blocking ones where the fix is cheap and clearly correct), re-run Step 4 until the suite is green again, and reply with what you changed and the test results; or
    - tell you the review passed — now run **Step 6, close-out**, and reply confirming the move; or
-   - tell you blocking issues remain unresolved after the last round — leave the story in `STORIES/TODO/`, leave `COMPLETED.md` untouched, and reply listing what blocked it.
+   - tell you blocking issues remain unresolved after the last round — leave the story in `STORIES/TODO/`, leave `COMPLETED.md` untouched, and reply listing what blocked it; or
+   - tell you the review could not be run at all — run the path B reinforced self-review below yourself, then proceed to Step 6 if nothing blocking remains, and say in your reply that you closed out (or didn't) on a self-review because the independent one was unavailable.
 
-**B — no review will follow** (you were invoked standalone, with no mention of a review):
+**B — your prompt does not contain that marker:**
 
-Run a reinforced self-review in its place: re-verify your implementation against the code-reviewer rubric — every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions — fix what fails, then proceed to Step 6 yourself if nothing blocking remains. Note in your final report that the implementation has not had an independent review.
+This includes prompts that merely *talk about* a review — "I'll have this reviewed," "an independent review will follow" — without the marker itself: prose is never the trigger, only the marker is, and it cannot be satisfied by assertion. Run a reinforced self-review in its place: re-verify your implementation against the code-reviewer rubric — every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions — fix what fails, then proceed to Step 6 yourself if nothing blocking remains. This is the safe default here, not the risky one: without the marker there is no orchestrator to relay a verdict, so waiting would strand the story for nothing — and `run-stage` separately verifies, before it spawns a reviewer, that a marked run actually took path A, so you never need to hedge toward A to be safe. Note in your final report that the implementation has not had an independent review.
 
 ## Step 6 — Close out
 

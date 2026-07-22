@@ -94,16 +94,17 @@ The stories get a second pair of eyes from **story-reviewer**, a separate agent 
 
 Which path you take depends on your invoking prompt:
 
-**A — a review will follow** (your prompt says an independent review will follow, or that you are running under the `run-stage` skill):
+**A — your prompt contains the literal marker `[run-stage:review-follows]`:**
 
 1. Finish the verify-before-finishing checklist thoroughly — it is the only gate before the reviewer sees the stories.
 2. Write your final report and end your run. Note that the stories are written and awaiting review.
 3. You will likely receive a follow-up message carrying the reviewer's verdict and its issues split into BLOCKING and NON-BLOCKING. When it arrives: fix every blocking issue (and non-blocking ones where the fix is cheap and clearly correct) by editing, splitting, merging, or renumbering the affected story files, and reply with what you changed. Do not re-review the stories yourself — the caller re-runs the reviewer.
 4. If the caller tells you blocking issues remain unresolved after the last round, append a short `## Review Notes (unresolved)` section to each story the issue is localized to. The pipeline never blocks on the story review; the user decides what to do with the notes.
+5. If the caller tells you the review could not be run at all, run the path B reinforced self-review below yourself and note in your reply that it replaced the independent one.
 
-**B — no review will follow** (you were invoked standalone, with no mention of a review):
+**B — your prompt does not contain that marker:**
 
-Run a reinforced self-review in its place: re-verify the stories against the story-reviewer rubric — full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies — fix what fails, and note in your final report that the stories have not had an independent review.
+This includes prompts that merely *talk about* a review — "an independent review will follow" — without the marker itself: prose is never the trigger, only the marker is, and it cannot be satisfied by assertion. Run a reinforced self-review in its place: re-verify the stories against the story-reviewer rubric — full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies — fix what fails, and note in your final report that the stories have not had an independent review. This is the safe default here, not the risky one: without the marker there is no orchestrator to relay a verdict, so waiting would serve no purpose — and `run-stage` separately verifies, before it spawns a reviewer, that a marked run actually took path A, so you never need to hedge toward A to be safe.
 
 ## Final report
 

@@ -16,7 +16,14 @@ Runs one pipeline stage as **producer → independent reviewer → fix → re-re
 Each producing agent used to spawn its own reviewer. It cannot: the harness exposes the
 `Agent` tool only at the top level, so a subagent has no spawn primitive at all (`ToolSearch
 select:Agent` returns nothing from inside one). The loop therefore runs here, in your
-context, where `Agent` and `SendMessage` are both available.
+context, where `Agent` and `SendMessage` genuinely exist — but may be deferred rather than
+already loaded.
+
+**Load them before you judge whether you have them.** Not seeing `Agent` or `SendMessage` in
+your currently loaded tools does not mean they are unavailable here — unlike inside a
+subagent, where they are truly absent, at this level they may simply need loading. Run
+`ToolSearch` with `select:Agent,SendMessage` first. Only if that call returns neither may
+you treat them as unavailable and drop to "If you cannot spawn either" below.
 
 **Run this skill inline.** Do not delegate the orchestration itself to a subagent — it
 would land in the same position and be unable to spawn anything.
@@ -42,15 +49,23 @@ you need it to send the verdict back. Include in its prompt:
 
 - the artifact it must produce (draft path, spec path, or story path);
 - the project root, if it is not the current working directory;
-- the sentence **"An independent review will follow: do not close out, and do not attempt
-  to spawn a reviewer yourself."** This is what switches the producer into review-gate
-  mode. Without it a producer invoked standalone falls back to its own reinforced
-  self-review, which is correct behaviour but skips the gate.
+- the literal marker **`[run-stage:review-follows]`**, plus the instruction "do not close
+  out (where applicable), and do not attempt to spawn a reviewer yourself." The marker is
+  what switches the producer into review-gate mode — a fixed token no one would type by
+  accident in an ordinary English request, unlike a sentence a direct invocation could
+  coincidentally echo. Without it a producer invoked standalone falls back to its own
+  reinforced self-review, which is correct behaviour but skips the gate.
 
 If the producer reports it could not produce the artifact at all, stop here and report
 that — there is nothing to review.
 
 ### 2. Spawn the reviewer
+
+Before spawning it, confirm the producer's report actually shows path A (the artifact is
+awaiting review) rather than a path B self-review it ran despite the marker. For a
+feature-builder specifically: if the story has already moved to `STORIES/COMPLETED/`, path
+A was not taken — stop, do not spawn the reviewer over work already closed out, and report
+the bypass to the user instead.
 
 Invoke the matching reviewer with `run_in_background: false`, telling it the artifact path
 (and, for `code-reviewer`, the project's test command so it can re-run the suite). Record
@@ -68,8 +83,8 @@ than one `VERDICT:` line, the last one is the verdict.
 - **CHANGES_REQUESTED** → go to step 3.
 - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned only
   prose) → spawn it once more. If the second attempt also returns no verdict, treat the
-  review as unavailable: tell the producer to run the reinforced self-review from its
-  fallback path, and say so in your report.
+  review as unavailable: `SendMessage` the producer that the review could not be run at
+  all, so it falls back to its own reinforced self-review, and say so in your report.
 
 Judge only by the verdict line and the issues under it. A reviewer that lists non-blocking
 findings under `VERDICT: APPROVED` has approved the work.
@@ -101,8 +116,9 @@ treat that section as advisory audit output rather than requirements.
 - `VERDICT: APPROVED`, or only NON-BLOCKING issues remain → `SendMessage` the builder to
   run its close-out step: move the story from `STORIES/TODO/` to `STORIES/COMPLETED/` and
   append the entry to `STORIES/COMPLETED.md`.
-- BLOCKING issues survive the last round → the story stays in `STORIES/TODO/` and
-  `COMPLETED.md` is untouched. Report exactly which issues blocked it. Treat this like a
+- BLOCKING issues survive the last round → `SendMessage` the builder telling it which
+  issues remain unresolved; it replies confirming the story stays in `STORIES/TODO/` with
+  `COMPLETED.md` untouched. Report exactly which issues blocked it. Treat this like a
   failing test, not a formality.
 - One exception: if the *only* remaining blocking issue is that the reviewer could not
   execute the test command in its environment, and the builder reported running the full
@@ -124,6 +140,8 @@ spec still has unresolved blocking issues without saying so first.
 
 ## If you cannot spawn either
 
-If the `Agent` tool is unavailable in your own context too, run the producer's work
-yourself against its agent definition, then audit the result against the matching
-reviewer's rubric inline, and tell the user the pipeline ran without agent isolation.
+Only reach this if `ToolSearch select:Agent,SendMessage` genuinely returned neither tool —
+not because they weren't already sitting in your loaded tool list. If so, run the
+producer's work yourself against its agent definition, then audit the result against the
+matching reviewer's rubric inline, and tell the user the pipeline ran without agent
+isolation.

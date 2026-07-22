@@ -42,7 +42,7 @@ Do not invent issues to appear thorough. If the implementation is genuinely corr
 
 ## Output format
 
-Your entire response must start with the verdict line, so the caller can parse it. Use exactly one of:
+Your entire response must start with the verdict line — no preamble, no summary sentence, nothing before it — so the caller can parse it. Use exactly one of:
 
 ```
 VERDICT: APPROVED
