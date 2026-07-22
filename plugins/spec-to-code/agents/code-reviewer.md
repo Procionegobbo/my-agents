@@ -58,7 +58,7 @@ NON-BLOCKING:
 2. ...
 ```
 
-If there are no blocking issues, omit the `BLOCKING:` block; if there are none non-blocking, omit the `NON-BLOCKING:` block. Use `APPROVED` only when there are zero blocking issues (non-blocking-only findings may still be reported under an `APPROVED` verdict with a `NON-BLOCKING:` block). If you could not run the test suite, state that under the verdict — never report `APPROVED` on the strength of an unverified "tests pass" claim.
+If there are no blocking issues, omit the `BLOCKING:` block; if there are none non-blocking, omit the `NON-BLOCKING:` block. Use `CHANGES_REQUESTED` only when there is at least one BLOCKING issue. If every finding is non-blocking — or there are no findings at all — the verdict must be `APPROVED`; report any non-blocking findings under it with a `NON-BLOCKING:` block. Never emit `CHANGES_REQUESTED` with an empty `BLOCKING:` list. If you genuinely could not execute the test command in your environment, emit `VERDICT: CHANGES_REQUESTED` with a BLOCKING item naming the exact command and error — never report `APPROVED` on the strength of an unverified "tests pass" claim.
 
 Each issue must be actionable on its own: cite `file:line`, the acceptance criterion, or the failing test, and say what is wrong. The author will act on your list without re-deriving your reasoning.
 

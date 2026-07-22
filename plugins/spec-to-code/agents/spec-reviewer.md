@@ -17,7 +17,7 @@ The caller names the spec file to review, located in `STORIES/SPECS/`. Read the 
 
 Audit the spec against every item below. This mirrors the spec-builder's own "Verify before finishing" checklist — your value is being a second, independent pass over it.
 
-1. **No unresolved blanks.** No `TBD`, `???`, or open questions anywhere outside the **Assumptions & Decisions** section. Decisions that were deferred to the reader are defects.
+1. **No unresolved blanks.** No `TBD`, `???`, or open questions anywhere outside the **Assumptions & Decisions** section (and any `## Review Notes (unresolved)` section, which is prior audit output — do not flag its contents as blanks or defects). Decisions that were deferred to the reader are defects.
 2. **File paths verified.** Every file path named in the spec either exists in the codebase or is explicitly marked `(new)`. Spot-check the paths that aren't marked `(new)` — a path that doesn't exist and isn't marked new is a defect.
 3. **Required sections present.** Feature Name & Description, Assumptions & Decisions, Architecture/Design Overview, Configuration, Data Model, Impact on Existing Code, Validation Rules, Authorization & Security, Testing, Suggested Story Breakdown, Success Criteria. A section may be omitted only if the spec explicitly states it is not applicable. A silently missing section is a defect.
 4. **Self-contained.** A developer who never read the original draft could implement the feature from the spec alone. Flag anywhere the spec assumes context that isn't written down.
@@ -54,7 +54,7 @@ NON-BLOCKING:
 2. ...
 ```
 
-If there are no blocking issues, omit the `BLOCKING:` block; if there are none non-blocking, omit the `NON-BLOCKING:` block. Use `APPROVED` only when there are zero blocking issues (non-blocking-only findings may still be reported under an `APPROVED` verdict with a `NON-BLOCKING:` block).
+If there are no blocking issues, omit the `BLOCKING:` block; if there are none non-blocking, omit the `NON-BLOCKING:` block. Use `CHANGES_REQUESTED` only when there is at least one BLOCKING issue. If every finding is non-blocking — or there are no findings at all — the verdict must be `APPROVED`; report any non-blocking findings under it with a `NON-BLOCKING:` block. Never emit `CHANGES_REQUESTED` with an empty `BLOCKING:` list.
 
 Each issue must be actionable on its own: name the section, quote the offending text or path, and say what is wrong — not just that something is wrong. The author will act on your list without re-deriving your reasoning.
 

@@ -133,10 +133,11 @@ Before finishing, get an independent review of the spec you wrote. This is a sec
 2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
    - **APPROVED** — proceed to the final report.
    - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct), overwrite the spec, then invoke spec-reviewer again on the updated file.
-3. Run **at most 2 review rounds** (up to 3 reviewer calls total). Stop as soon as you get APPROVED.
+   - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned prose) — do not assume approval. Invoke it once more; if the second call also returns no verdict, follow the cannot-run-the-review fallback below.
+3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
 4. If BLOCKING issues still remain after the last round, do not block the pipeline: append a `## Review Notes (unresolved)` section to the spec listing them, and surface them in your final report so the user can decide. The pipeline must never get stuck waiting on the reviewer.
 
-**If you cannot run the independent review** — the Agent tool is not available to you (older Claude Code versions do not expose sub-agent dispatch inside a sub-agent), or the spec-reviewer agent is not installed in this project: skip the independent review, re-verify the spec against the spec-reviewer rubric (completeness, resolved decisions, verified paths, regression-safety of changes to existing code) yourself, and note in your final report that an independent review could not be run in this environment.
+**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:spec-reviewer` and `spec-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the spec against the spec-reviewer rubric (completeness, resolved decisions, verified paths, regression-safety of changes to existing code) yourself, and note in your final report that an independent review could not be run in this environment.
 
 ## Final report
 

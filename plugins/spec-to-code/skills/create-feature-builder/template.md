@@ -19,6 +19,7 @@ You run autonomously: you cannot ask the user questions mid-run. Resolve ambigui
 
 - Read the story file from `STORIES/TODO/` that the user names.
 - If the story contains a **Spec:** reference, read that spec file in `STORIES/SPECS/` for full architectural context (data model, authorization, conventions, design decisions) before implementing.
+- If the story or its spec contains a `## Review Notes (unresolved)` section, treat it as advisory audit output, not requirements — do not implement or map it. Surface it in your final report.
 - Read the project's `CLAUDE.md` and any docs describing conventions.
 
 ## Step 2 — Explore the codebase (detect, don't assume)
@@ -59,14 +60,15 @@ Before closing out, get an independent review of your implementation. This is a 
 2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
    - **APPROVED** — proceed to close-out.
    - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct), re-run your tests (Step 4), then invoke code-reviewer again.
-3. Run **at most 2 review rounds** (up to 3 reviewer calls total). Stop as soon as you get APPROVED.
-4. If **BLOCKING** issues still remain after the last round, treat the story as not done: leave it in `STORIES/TODO/`, do **not** move it to `COMPLETED/`, and report exactly which blocking issues remain (same handling as a failing test). Remaining **NON-BLOCKING** issues do not block close-out — list them in your final report.
+   - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned prose) — do not assume approval. Invoke it once more; if the second call also returns no verdict, follow the cannot-run-the-review fallback below.
+3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
+4. If **BLOCKING** issues still remain after the last round, treat the story as not done: leave it in `STORIES/TODO/`, do **not** move it to `COMPLETED/`, and report exactly which blocking issues remain (same handling as a failing test). Remaining **NON-BLOCKING** issues do not block close-out — list them in your final report. The one exception: if the *only* remaining blocking issue is that the reviewer could not execute the test command in its environment, and you have run the full suite green yourself this session (Step 4), record it as a non-blocking note and proceed.
 
-**If you cannot run the independent review** — the Agent tool is not available to you (older Claude Code versions do not expose sub-agent dispatch inside a sub-agent), or the code-reviewer agent is not installed in this project: skip the independent review, re-verify your implementation against the code-reviewer rubric (every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions) yourself, and note in your final report that an independent review could not be run in this environment.
+**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:code-reviewer` and `code-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify your implementation against the code-reviewer rubric (every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions) yourself, and note in your final report that an independent review could not be run in this environment.
 
 ## Step 6 — Close out
 
-**Only if every acceptance criterion is verified and all tests pass:**
+**Only if every acceptance criterion is verified, all tests pass, and the review gate passed** — the independent review returned `VERDICT: APPROVED`, or (in the fallback) your reinforced self-review found no blocking issues, or the only remaining issues are non-blocking:
 
 1. Move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/`.
 2. Append an entry to `STORIES/COMPLETED.md`:
@@ -78,7 +80,7 @@ Before closing out, get an independent review of your implementation. This is a 
 
 If `STORIES/COMPLETED.md` does not exist, create it. Never truncate or overwrite existing entries.
 
-**If anything cannot be completed** (a failing test you cannot fix, a criterion you cannot satisfy): leave the story in `STORIES/TODO/` and do not touch `COMPLETED.md`.
+**If anything cannot be completed** (a failing test you cannot fix, a criterion you cannot satisfy, or a blocking review issue that survives the last round): leave the story in `STORIES/TODO/` and do not touch `COMPLETED.md`.
 
 ## Final report
 

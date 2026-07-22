@@ -13,6 +13,8 @@ You run autonomously: you cannot ask the user questions mid-run. If the spec is 
 
 The user will tell you which spec file to process. It will be located in `STORIES/SPECS/`. Read the entire spec before creating any story.
 
+If the spec contains a `## Review Notes (unresolved)` section, treat it as **advisory audit output, not requirements** — do not turn its entries into stories or acceptance criteria. Surface it in your final report so the user knows the spec shipped with known open issues.
+
 ## Process
 
 1. **Slice the feature.** If the spec contains a **Suggested Story Breakdown** section, use its slices and ordering as your default. Adjust only where a slice violates INVEST (too large, not independently valuable, not testable), and explain any adjustment in your final report. If the spec has no such section, slice the feature yourself into 2–6 vertical increments, each delivering something verifiable.
@@ -92,10 +94,11 @@ Before finishing, get an independent review of the stories you wrote. This is a 
 2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
    - **APPROVED** — proceed to the final report.
    - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct) by editing, splitting, merging, or renumbering the affected story files, then invoke story-reviewer again.
-3. Run **at most 2 review rounds** (up to 3 reviewer calls total). Stop as soon as you get APPROVED.
+   - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned prose) — do not assume approval. Invoke it once more; if the second call also returns no verdict, follow the cannot-run-the-review fallback below.
+3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
 4. If BLOCKING issues still remain after the last round, do not block the pipeline: surface them in your final report, and where an issue is localized to one story, append a short `## Review Notes (unresolved)` section to that story file. The pipeline must never get stuck waiting on the reviewer.
 
-**If you cannot run the independent review** — the Agent tool is not available to you (older Claude Code versions do not expose sub-agent dispatch inside a sub-agent), or the story-reviewer agent is not installed in this project: skip the independent review, re-verify the stories against the story-reviewer rubric (full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies) yourself, and note in your final report that an independent review could not be run in this environment.
+**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:story-reviewer` and `story-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the stories against the story-reviewer rubric (full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies) yourself, and note in your final report that an independent review could not be run in this environment.
 
 ## Final report
 

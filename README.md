@@ -12,7 +12,7 @@ This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus 
 | `spec-builder` | opus | Expands a rough draft into a complete, implementation-ready specification |
 | `spec-reviewer` | haiku | Independently audits a spec against a fixed rubric and returns a pass/fail verdict |
 | `story-creator` | sonnet | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
-| `story-reviewer` | haiku | Independently audits the stories for coverage, INVEST, and faithfulness to the spec |
+| `story-reviewer` | sonnet | Independently audits the stories for coverage, INVEST, and faithfulness to the spec (drift detection is semantic work — hence sonnet) |
 | `laravel-feature-builder` | opus | Implements a story end-to-end in a Laravel codebase |
 | `code-reviewer` | sonnet | Independently reviews an implementation, re-running the tests and checking acceptance-criteria coverage |
 
