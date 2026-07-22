@@ -90,6 +90,8 @@ Check your output against this list and fix anything that fails:
 
 Before finishing, get an independent review of the stories you wrote. This is a second pair of eyes from a separate agent running a cheaper model — it catches coverage gaps and drift your own self-check misses.
 
+**Find the Agent tool before you judge whether you have it.** Not seeing `Agent` in the tools currently loaded in your context does not mean you cannot spawn a subagent: tools are frequently deferred and must be loaded on demand. Run `ToolSearch` with the query `select:Agent` first. Only if that call fails to return the tool may you treat it as unavailable.
+
 1. Invoke the **story-reviewer** agent via the Agent tool, telling it the spec name and that the stories are in `STORIES/TODO/`. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:story-reviewer` if that is what the Agent tool exposes, otherwise `story-reviewer`.
 2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
    - **APPROVED** — proceed to the final report.
@@ -98,7 +100,7 @@ Before finishing, get an independent review of the stories you wrote. This is a 
 3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
 4. If BLOCKING issues still remain after the last round, do not block the pipeline: surface them in your final report, and where an issue is localized to one story, append a short `## Review Notes (unresolved)` section to that story file. The pipeline must never get stuck waiting on the reviewer.
 
-**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:story-reviewer` and `story-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the stories against the story-reviewer rubric (full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies) yourself, and note in your final report that an independent review could not be run in this environment.
+**Only fall back if you genuinely cannot run the review** — `ToolSearch` with `select:Agent` did not return the Agent tool, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:story-reviewer` and `story-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the stories against the story-reviewer rubric (full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies) yourself, and note in your final report that an independent review could not be run in this environment.
 
 ## Final report
 

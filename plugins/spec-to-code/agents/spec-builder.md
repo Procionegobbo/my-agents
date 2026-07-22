@@ -129,6 +129,8 @@ Pay special attention to anything shared across features: shared models/schema a
 
 Before finishing, get an independent review of the spec you wrote. This is a second pair of eyes from a separate agent running a cheaper model — it catches gaps your own self-check misses.
 
+**Find the Agent tool before you judge whether you have it.** Not seeing `Agent` in the tools currently loaded in your context does not mean you cannot spawn a subagent: tools are frequently deferred and must be loaded on demand. Run `ToolSearch` with the query `select:Agent` first. Only if that call fails to return the tool may you treat it as unavailable.
+
 1. Invoke the **spec-reviewer** agent via the Agent tool, telling it which spec file in `STORIES/SPECS/` you just wrote. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:spec-reviewer` if that is what the Agent tool exposes, otherwise `spec-reviewer`.
 2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
    - **APPROVED** — proceed to the final report.
@@ -137,7 +139,7 @@ Before finishing, get an independent review of the spec you wrote. This is a sec
 3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
 4. If BLOCKING issues still remain after the last round, do not block the pipeline: append a `## Review Notes (unresolved)` section to the spec listing them, and surface them in your final report so the user can decide. The pipeline must never get stuck waiting on the reviewer.
 
-**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:spec-reviewer` and `spec-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the spec against the spec-reviewer rubric (completeness, resolved decisions, verified paths, regression-safety of changes to existing code) yourself, and note in your final report that an independent review could not be run in this environment.
+**Only fall back if you genuinely cannot run the review** — `ToolSearch` with `select:Agent` did not return the Agent tool, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:spec-reviewer` and `spec-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the spec against the spec-reviewer rubric (completeness, resolved decisions, verified paths, regression-safety of changes to existing code) yourself, and note in your final report that an independent review could not be run in this environment.
 
 ## Final report
 
