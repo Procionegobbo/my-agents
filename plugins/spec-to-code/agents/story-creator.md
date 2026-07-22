@@ -86,21 +86,25 @@ Check your output against this list and fix anything that fails:
 - [ ] Every story's H1 title matches its filename (minus `.md`).
 - [ ] Dependencies only reference lower-numbered stories from the same spec.
 
-## Independent review loop
+## The independent review gate
 
-Before finishing, get an independent review of the stories you wrote. This is a second pair of eyes from a separate agent running a cheaper model — it catches coverage gaps and drift your own self-check misses.
+The stories get a second pair of eyes from **story-reviewer**, a separate agent that audits them for coverage, INVEST compliance, and drift from the spec. That review is run by whoever invoked you, not by you.
 
-**Find the Agent tool before you judge whether you have it.** Not seeing `Agent` in the tools currently loaded in your context does not mean you cannot spawn a subagent: tools are frequently deferred and must be loaded on demand. Run `ToolSearch` with the query `select:Agent` first. Only if that call fails to return the tool may you treat it as unavailable.
+**Do not attempt to spawn a subagent.** You have no spawn primitive — the harness exposes the `Agent` tool only at the top level, so `ToolSearch select:Agent` returns nothing from inside an agent. This is normal and is not a degraded environment. Do not search for it, do not report its absence as a problem.
 
-1. Invoke the **story-reviewer** agent via the Agent tool, telling it the spec name and that the stories are in `STORIES/TODO/`. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:story-reviewer` if that is what the Agent tool exposes, otherwise `story-reviewer`.
-2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
-   - **APPROVED** — proceed to the final report.
-   - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct) by editing, splitting, merging, or renumbering the affected story files, then invoke story-reviewer again.
-   - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned prose) — do not assume approval. Invoke it once more; if the second call also returns no verdict, follow the cannot-run-the-review fallback below.
-3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
-4. If BLOCKING issues still remain after the last round, do not block the pipeline: surface them in your final report, and where an issue is localized to one story, append a short `## Review Notes (unresolved)` section to that story file. The pipeline must never get stuck waiting on the reviewer.
+Which path you take depends on your invoking prompt:
 
-**Only fall back if you genuinely cannot run the review** — `ToolSearch` with `select:Agent` did not return the Agent tool, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:story-reviewer` and `story-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the stories against the story-reviewer rubric (full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies) yourself, and note in your final report that an independent review could not be run in this environment.
+**A — your prompt contains the literal marker `[run-stage:review-follows]`:**
+
+1. Finish the verify-before-finishing checklist thoroughly — it is the only gate before the reviewer sees the stories.
+2. Write your final report and end your run. Note that the stories are written and awaiting review.
+3. You will likely receive a follow-up message carrying the reviewer's verdict and its issues split into BLOCKING and NON-BLOCKING. When it arrives: fix every blocking issue (and non-blocking ones where the fix is cheap and clearly correct) by editing, splitting, merging, or renumbering the affected story files, and reply with what you changed. Do not re-review the stories yourself — the caller re-runs the reviewer.
+4. If the caller tells you blocking issues remain unresolved after the last round, append a short `## Review Notes (unresolved)` section to each story the issue is localized to. The pipeline never blocks on the story review; the user decides what to do with the notes.
+5. If the caller tells you the review could not be run at all, run the path B reinforced self-review below yourself and note in your reply that it replaced the independent one.
+
+**B — your prompt does not contain that marker:**
+
+This includes prompts that merely *talk about* a review — "an independent review will follow" — without the marker itself: prose is never the trigger, only the marker is, and it cannot be satisfied by assertion. Run a reinforced self-review in its place: re-verify the stories against the story-reviewer rubric — full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies — fix what fails, and note in your final report that the stories have not had an independent review. This is the safe default here, not the risky one: without the marker there is no orchestrator to relay a verdict, so waiting would serve no purpose — and `run-stage` separately verifies, before it spawns a reviewer, that a marked run actually took path A, so you never need to hedge toward A to be safe.
 
 ## Final report
 
@@ -108,4 +112,4 @@ End your run by reporting back:
 1. The list of created story files, each with a one-line summary.
 2. The implementation order.
 3. Any deviations from the spec's Suggested Story Breakdown, with reasons, and any ambiguities you noticed in the spec.
-4. The independent review outcome: approved, or the unresolved review notes that remain (or that the review could not be run in this environment).
+4. The review status: awaiting independent review (path A), or that you ran a reinforced self-review because none will follow (path B). If you are replying after a review round, report what you changed instead.

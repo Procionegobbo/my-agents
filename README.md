@@ -20,20 +20,31 @@ This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus 
 
 ### Built-in review loop
 
-Each producing agent runs a **generator → independent review** loop before finishing: after its own self-check, it invokes the matching reviewer agent (a separate agent, on a cheaper model, with a clean context) which audits the output against a fixed rubric and returns a structured `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED` (with issues classified BLOCKING / NON-BLOCKING). The producer fixes the blocking issues and re-reviews, up to **2 rounds**, then finishes.
+Each producing agent is paired with a **generator → independent review** loop: once the producer finishes its own self-check, the matching reviewer agent (a separate agent, on a cheaper model, with a clean context) audits the output against a fixed rubric and returns a structured `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED` (with issues classified BLOCKING / NON-BLOCKING). The producer fixes the blocking issues and the reviewer re-audits, up to **2 rounds**.
 
 - **spec-builder → spec-reviewer**, **story-creator → story-reviewer**: never block the pipeline. Any blocking issue left after the last round is recorded as a `Review Notes (unresolved)` note and surfaced in the final report for you to decide on.
 - **feature-builder → code-reviewer**: the review is a real gate. A blocking issue that survives the last round (a failing test, an uncovered acceptance criterion) keeps the story in `STORIES/TODO/` — it is not moved to `COMPLETED/` — exactly like a failing test.
 
-The loop runs automatically inside each step; you invoke the pipeline exactly as before. Reviewers can also be run standalone on an existing artifact. The loop needs a Claude Code version that exposes sub-agent dispatch to sub-agents (**v2.1.172+**); on older versions each agent falls back to a reinforced self-review against the same rubric and says so in its report.
+**The loop is driven by the `run-stage` skill, not by the producing agents.** Claude Code exposes sub-agent dispatch only at the top level: an agent running as a subagent has no way to spawn another one, so the producers cannot invoke their own reviewers. `run-stage` runs in the main session, where it *can* spawn both, and passes the verdict back to the producer — which is resumed with its context intact, so the fix round is cheap.
+
+Practical consequence: **launch pipeline stages through `run-stage`**, not by naming the agent directly.
+
+```
+> /spec-to-code:run-stage spec-builder on STORIES/SPECS/user-search.md
+```
+
+Invoked directly, a producer still works — it just falls back to a reinforced self-review against the same rubric and says so in its report. For feature-builder that means the story closes out on a self-review rather than a real review gate.
+
+Reviewers can also be run standalone on an existing artifact.
 
 ## Skills
 
 | Skill | Purpose |
 |---|---|
+| `run-stage` | Runs one pipeline stage (`spec-builder`, `story-creator`, or a `<stack>-feature-builder`) together with its independent review gate. This is the intended entry point for every stage. |
 | `create-feature-builder` | Generates a `<stack>-feature-builder` agent tailored to the current repo — detects the stack, explores the codebase, and writes the agent into `.claude/agents/`. Automates the manual process described in *Adding a new feature-builder*. |
 
-Invoke it as a slash command. Installed as a plugin, skills are namespaced: `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, it is `/create-feature-builder`.
+Invoke them as slash commands. Installed as a plugin, skills are namespaced: `/spec-to-code:run-stage`, `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, they are `/run-stage` and `/create-feature-builder`.
 
 ---
 
@@ -41,7 +52,7 @@ Invoke it as a slash command. Installed as a plugin, skills are namespaced: `/sp
 
 ### Option A — Plugin (recommended)
 
-Install the whole pipeline (all agents + the skill) in one step. This gives you versioned, updatable installs and works across every project.
+Install the whole pipeline (all agents + the skills) in one step. This gives you versioned, updatable installs and works across every project.
 
 ```
 /plugin marketplace add Procionegobbo/my-agents
@@ -50,7 +61,7 @@ Install the whole pipeline (all agents + the skill) in one step. This gives you 
 
 Update later with `/plugin marketplace update my-agents`, then `/plugin update spec-to-code`.
 
-> **Note:** plugin skills are namespaced (`/spec-to-code:create-feature-builder`). Plugin agents keep their frontmatter `name` (`spec-builder`, `laravel-feature-builder`, …) and are invoked the same way as before. A same-named agent in the project's own `.claude/agents/` overrides the plugin's version.
+> **Note:** plugin skills are namespaced (`/spec-to-code:run-stage`, `/spec-to-code:create-feature-builder`). Plugin agents keep their frontmatter `name` (`spec-builder`, `laravel-feature-builder`, …) and are invoked the same way as before. A same-named agent in the project's own `.claude/agents/` overrides the plugin's version.
 
 ### Option B — Manual copy
 
@@ -60,10 +71,10 @@ Use this when you want the files checked into a specific repo (or your global `~
 # into a project (or swap the target for ~/.claude)
 mkdir -p your-repo/.claude/agents your-repo/.claude/skills
 cp plugins/spec-to-code/agents/*.md your-repo/.claude/agents/
-cp -r plugins/spec-to-code/skills/create-feature-builder your-repo/.claude/skills/
+cp -r plugins/spec-to-code/skills/* your-repo/.claude/skills/
 ```
 
-Copied this way the skill is invoked as `/create-feature-builder` (no namespace).
+Copied this way the skills are invoked without the namespace: `/run-stage`, `/create-feature-builder`.
 
 ### Activation
 
@@ -97,16 +108,18 @@ Your idea / draft
       │
       ▼
   spec-builder        ← write a draft in STORIES/SPECS/, then run this
-      │  └─ spec-reviewer     (automatic review loop, ≤2 rounds)
+      │  └─ spec-reviewer     (review loop, ≤2 rounds)
       ▼
   story-creator       ← run on the completed spec
-      │  └─ story-reviewer    (automatic review loop, ≤2 rounds)
+      │  └─ story-reviewer    (review loop, ≤2 rounds)
       ▼
  feature-builder      ← run on each story in STORIES/TODO/
-      │  └─ code-reviewer     (automatic review loop, ≤2 rounds — gates close-out)
+      │  └─ code-reviewer     (review loop, ≤2 rounds — gates close-out)
       ▼
    STORIES/COMPLETED/ ← story is moved here when done
 ```
+
+Each of the three producer/reviewer pairs is driven by the `run-stage` skill — launch every stage with it (`/spec-to-code:run-stage <agent> on <path>`) so the review gate actually runs.
 
 ---
 
@@ -146,7 +159,7 @@ Your draft can be as rough as you like — bullet points, a paragraph, half-form
 ### 3. Expand the draft into a full specification
 
 ```
-> Run spec-builder on STORIES/SPECS/user-search.md
+> /spec-to-code:run-stage spec-builder on STORIES/SPECS/user-search.md
 ```
 
 The agent will:
@@ -174,7 +187,7 @@ The resulting spec is self-contained: a developer who has never seen the draft c
 ### 4. Create user stories
 
 ```
-> Run story-creator on STORIES/SPECS/user-search.md
+> /spec-to-code:run-stage story-creator on STORIES/SPECS/user-search.md
 ```
 
 The agent will:
@@ -205,7 +218,7 @@ Pick a story from `STORIES/TODO/` and run the appropriate feature-builder for yo
 
 **Laravel:**
 ```
-> Run laravel-feature-builder on STORIES/TODO/user-search-001-basic.md
+> /spec-to-code:run-stage laravel-feature-builder on STORIES/TODO/user-search-001-basic.md
 ```
 
 The agent will:
@@ -214,7 +227,8 @@ The agent will:
 3. Implement the feature end-to-end: migrations, models, controllers or Livewire components, form requests, services, routes, policies, and views.
 4. Write tests following the project's test conventions and run them until green, along with the formatter and static analysis if configured.
 5. Verify every acceptance criterion is satisfied, then run the project's full test suite once to catch regressions outside the touched areas.
-6. Only then: move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/` and append an entry to `STORIES/COMPLETED.md`. If something cannot be completed, the story stays in `STORIES/TODO/` and the agent reports exactly what failed.
+6. Hand off to `code-reviewer`, which re-runs the suite itself and audits acceptance-criteria coverage.
+7. Only once the review passes: move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/` and append an entry to `STORIES/COMPLETED.md`. If something cannot be completed — a failing test, an unmet criterion, or a blocking review issue — the story stays in `STORIES/TODO/` and the agent reports exactly what failed.
 
 If requirements are ambiguous, the agent resolves them from the spec and codebase precedent and lists its judgment calls in the final report.
 
@@ -226,12 +240,12 @@ If requirements are ambiguous, the agent resolves them from the spec and codebas
 # First time
 > Initialize the stories workspace
 > Write my draft in STORIES/SPECS/asset-collection.md
-> Run spec-builder on the asset-collection draft
-> Run story-creator on the asset-collection spec
+> /spec-to-code:run-stage spec-builder on the asset-collection draft
+> /spec-to-code:run-stage story-creator on the asset-collection spec
 
 # Implementation
-> Run laravel-feature-builder on STORIES/TODO/asset-collection-001-model.md
-> Run laravel-feature-builder on STORIES/TODO/asset-collection-002-crud.md
+> /spec-to-code:run-stage laravel-feature-builder on STORIES/TODO/asset-collection-001-model.md
+> /spec-to-code:run-stage laravel-feature-builder on STORIES/TODO/asset-collection-002-crud.md
 ```
 
 ---
