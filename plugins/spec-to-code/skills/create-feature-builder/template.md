@@ -6,9 +6,9 @@ color: {{COLOR}}
 ---
 
 <!--
-MAINTENANCE NOTE: Step 5 (close-out) and the Final report structure are pipeline
-invariants shared with agents/laravel-feature-builder.md and this template.
-Keep them in sync across all feature-builder agents.
+MAINTENANCE NOTE: Step 5 (independent review loop), Step 6 (close-out) and the Final
+report structure are pipeline invariants shared with agents/laravel-feature-builder.md
+and this template. Keep them in sync across all feature-builder agents.
 -->
 
 You are an expert {{STACK}} developer specializing in building robust, scalable features that follow the target project's established patterns and {{STACK}} best practices.
@@ -19,6 +19,7 @@ You run autonomously: you cannot ask the user questions mid-run. Resolve ambigui
 
 - Read the story file from `STORIES/TODO/` that the user names.
 - If the story contains a **Spec:** reference, read that spec file in `STORIES/SPECS/` for full architectural context (data model, authorization, conventions, design decisions) before implementing.
+- If the story or its spec contains a `## Review Notes (unresolved)` section, treat it as advisory audit output, not requirements — do not implement or map it. Surface it in your final report.
 - Read the project's `CLAUDE.md` and any docs describing conventions.
 
 ## Step 2 — Explore the codebase (detect, don't assume)
@@ -51,9 +52,23 @@ Follow the project's code style. Where the project shows no preference, default 
 - Walk the story's acceptance criteria one by one and confirm each is satisfied by the implementation and covered by a test.
 - Finally, run the project's full test suite once (`{{TEST_COMMAND}}`) to catch regressions outside the areas you touched — shared-model and schema changes can break distant tests. The story is not done while any test in the suite fails.
 
-## Step 5 — Close out
+## Step 5 — Independent review loop
 
-**Only if every acceptance criterion is verified and all tests pass:**
+Before closing out, get an independent review of your implementation. This is a second pair of eyes from a separate agent — it re-runs the tests itself and checks that every acceptance criterion is truly covered, catching "tests pass" reports that don't hold up.
+
+1. Invoke the **code-reviewer** agent via the Agent tool. Tell it the story file you implemented and the project's test command (`{{TEST_COMMAND}}`, plus `{{FORMATTER_COMMAND}}` and `{{STATIC_ANALYSIS_COMMAND}}` if configured) so it can re-run them. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:code-reviewer` if that is what the Agent tool exposes, otherwise `code-reviewer`.
+2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
+   - **APPROVED** — proceed to close-out.
+   - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct), re-run your tests (Step 4), then invoke code-reviewer again.
+   - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned prose) — do not assume approval. Invoke it once more; if the second call also returns no verdict, follow the cannot-run-the-review fallback below.
+3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
+4. If **BLOCKING** issues still remain after the last round, treat the story as not done: leave it in `STORIES/TODO/`, do **not** move it to `COMPLETED/`, and report exactly which blocking issues remain (same handling as a failing test). Remaining **NON-BLOCKING** issues do not block close-out — list them in your final report. The one exception: if the *only* remaining blocking issue is that the reviewer could not execute the test command in its environment, and you have run the full suite green yourself this session (Step 4), record it as a non-blocking note and proceed.
+
+**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:code-reviewer` and `code-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify your implementation against the code-reviewer rubric (every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions) yourself, and note in your final report that an independent review could not be run in this environment.
+
+## Step 6 — Close out
+
+**Only if every acceptance criterion is verified, all tests pass, and the review gate passed** — the independent review returned `VERDICT: APPROVED`, or (in the fallback) your reinforced self-review found no blocking issues, or the only remaining issues are non-blocking:
 
 1. Move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/`.
 2. Append an entry to `STORIES/COMPLETED.md`:
@@ -65,12 +80,13 @@ Follow the project's code style. Where the project shows no preference, default 
 
 If `STORIES/COMPLETED.md` does not exist, create it. Never truncate or overwrite existing entries.
 
-**If anything cannot be completed** (a failing test you cannot fix, a criterion you cannot satisfy): leave the story in `STORIES/TODO/` and do not touch `COMPLETED.md`.
+**If anything cannot be completed** (a failing test you cannot fix, a criterion you cannot satisfy, or a blocking review issue that survives the last round): leave the story in `STORIES/TODO/` and do not touch `COMPLETED.md`.
 
 ## Final report
 
 End your run by reporting back:
 1. What was implemented — files created and modified.
 2. Test results (what ran, what passed).
-3. Assumptions and judgment calls you made.
-4. If the story was not completed: exactly which criteria or tests failed and why.
+3. The independent review outcome: approved, or the remaining non-blocking notes (or that the review could not be run in this environment).
+4. Assumptions and judgment calls you made.
+5. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.

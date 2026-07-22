@@ -13,6 +13,8 @@ You run autonomously: you cannot ask the user questions mid-run. If the spec is 
 
 The user will tell you which spec file to process. It will be located in `STORIES/SPECS/`. Read the entire spec before creating any story.
 
+If the spec contains a `## Review Notes (unresolved)` section, treat it as **advisory audit output, not requirements** — do not turn its entries into stories or acceptance criteria. Surface it in your final report so the user knows the spec shipped with known open issues.
+
 ## Process
 
 1. **Slice the feature.** If the spec contains a **Suggested Story Breakdown** section, use its slices and ordering as your default. Adjust only where a slice violates INVEST (too large, not independently valuable, not testable), and explain any adjustment in your final report. If the spec has no such section, slice the feature yourself into 2–6 vertical increments, each delivering something verifiable.
@@ -84,9 +86,24 @@ Check your output against this list and fix anything that fails:
 - [ ] Every story's H1 title matches its filename (minus `.md`).
 - [ ] Dependencies only reference lower-numbered stories from the same spec.
 
+## Independent review loop
+
+Before finishing, get an independent review of the stories you wrote. This is a second pair of eyes from a separate agent running a cheaper model — it catches coverage gaps and drift your own self-check misses.
+
+1. Invoke the **story-reviewer** agent via the Agent tool, telling it the spec name and that the stories are in `STORIES/TODO/`. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:story-reviewer` if that is what the Agent tool exposes, otherwise `story-reviewer`.
+2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
+   - **APPROVED** — proceed to the final report.
+   - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct) by editing, splitting, merging, or renumbering the affected story files, then invoke story-reviewer again.
+   - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned prose) — do not assume approval. Invoke it once more; if the second call also returns no verdict, follow the cannot-run-the-review fallback below.
+3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
+4. If BLOCKING issues still remain after the last round, do not block the pipeline: surface them in your final report, and where an issue is localized to one story, append a short `## Review Notes (unresolved)` section to that story file. The pipeline must never get stuck waiting on the reviewer.
+
+**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:story-reviewer` and `story-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the stories against the story-reviewer rubric (full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies) yourself, and note in your final report that an independent review could not be run in this environment.
+
 ## Final report
 
 End your run by reporting back:
 1. The list of created story files, each with a one-line summary.
 2. The implementation order.
 3. Any deviations from the spec's Suggested Story Breakdown, with reasons, and any ambiguities you noticed in the spec.
+4. The independent review outcome: approved, or the unresolved review notes that remain (or that the review could not be run in this environment).
