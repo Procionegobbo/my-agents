@@ -127,5 +127,5 @@ Report back:
 1. The generated file and its path.
 2. The scope it was tailored to (`{{SCOPE_ROOT}}`) when a subfolder was given.
 3. The hardcoded specifics (test / formatter / static-analysis commands, key paths).
-4. That the generated agent runs an automatic review loop via the **code-reviewer** agent (Step 5). It is available when `spec-to-code` is installed as a plugin or its agents were copied wholesale; if `code-reviewer` is absent, the generated agent falls back to a reinforced self-review and says so — no action needed, but note it so the user knows the reviewer is expected.
+4. That the generated agent expects an independent **code-reviewer** pass as a close-out gate (Step 5), orchestrated by the `run-stage` skill — subagents cannot spawn subagents, so the loop runs one level up. Tell the user to launch it via `run-stage` (`/spec-to-code:run-stage`) rather than invoking the agent directly, or the story closes out on a self-review instead of a real review.
 5. That the user must **restart the Claude Code session** for the new agent to be discovered.

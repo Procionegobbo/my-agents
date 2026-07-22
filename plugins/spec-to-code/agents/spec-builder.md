@@ -125,21 +125,24 @@ The spec has no code to test, so "regression" here means: would the changes the 
 
 Pay special attention to anything shared across features: shared models/schema and migrations, common base classes or utilities, auth/permission rules, and public API or event contracts. If you cannot rule out a regression for a modified target, add it to **Assumptions & Decisions** as an open risk rather than leaving it implicit.
 
-## Step 5 — Independent review loop
+## Step 5 — The independent review gate
 
-Before finishing, get an independent review of the spec you wrote. This is a second pair of eyes from a separate agent running a cheaper model — it catches gaps your own self-check misses.
+The spec gets a second pair of eyes from **spec-reviewer**, a separate agent on a cheaper model that audits it against a fixed rubric. That review is run by whoever invoked you, not by you.
 
-**Find the Agent tool before you judge whether you have it.** Not seeing `Agent` in the tools currently loaded in your context does not mean you cannot spawn a subagent: tools are frequently deferred and must be loaded on demand. Run `ToolSearch` with the query `select:Agent` first. Only if that call fails to return the tool may you treat it as unavailable.
+**Do not attempt to spawn a subagent.** You have no spawn primitive — the harness exposes the `Agent` tool only at the top level, so `ToolSearch select:Agent` returns nothing from inside an agent. This is normal and is not a degraded environment. Do not search for it, do not report its absence as a problem.
 
-1. Invoke the **spec-reviewer** agent via the Agent tool, telling it which spec file in `STORIES/SPECS/` you just wrote. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:spec-reviewer` if that is what the Agent tool exposes, otherwise `spec-reviewer`.
-2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
-   - **APPROVED** — proceed to the final report.
-   - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct), overwrite the spec, then invoke spec-reviewer again on the updated file.
-   - **No `VERDICT:` line anywhere in the response** (the reviewer errored, or returned prose) — do not assume approval. Invoke it once more; if the second call also returns no verdict, follow the cannot-run-the-review fallback below.
-3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
-4. If BLOCKING issues still remain after the last round, do not block the pipeline: append a `## Review Notes (unresolved)` section to the spec listing them, and surface them in your final report so the user can decide. The pipeline must never get stuck waiting on the reviewer.
+Which path you take depends on your invoking prompt:
 
-**Only fall back if you genuinely cannot run the review** — `ToolSearch` with `select:Agent` did not return the Agent tool, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:spec-reviewer` and `spec-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify the spec against the spec-reviewer rubric (completeness, resolved decisions, verified paths, regression-safety of changes to existing code) yourself, and note in your final report that an independent review could not be run in this environment.
+**A — a review will follow** (your prompt says an independent review will follow, or that you are running under the `run-stage` skill):
+
+1. Finish Step 4's self-check thoroughly — it is the only gate before the reviewer sees the spec.
+2. Write your final report and end your run. Note that the spec is written and awaiting review.
+3. You will likely receive a follow-up message carrying the reviewer's verdict and its issues split into BLOCKING and NON-BLOCKING. When it arrives: fix every blocking issue (and non-blocking ones where the fix is cheap and clearly correct), overwrite the spec, and reply with what you changed. Do not re-review the spec yourself and do not judge your own fixes approved — the caller re-runs the reviewer.
+4. If the caller tells you blocking issues remain unresolved after the last round, append a `## Review Notes (unresolved)` section to the spec listing them. The pipeline never blocks on the spec review; the user decides what to do with the notes.
+
+**B — no review will follow** (you were invoked standalone, with no mention of a review):
+
+Run a reinforced self-review in its place: re-verify the spec against the spec-reviewer rubric — completeness, resolved decisions, verified file paths, regression-safety of every change to existing code — fix what fails, and note in your final report that the spec has not had an independent review.
 
 ## Final report
 
@@ -147,7 +150,7 @@ End your run by reporting back:
 1. A one-paragraph summary of the feature as specced.
 2. The list of assumptions and decisions you made (so the user can review them without opening the file).
 3. Any breaking changes or regression risks the spec introduces to existing code (from the regression-risk review), or "none" if the changes are all additive.
-4. The independent review outcome: approved, or the unresolved review notes that remain (or that the review could not be run in this environment).
+4. The review status: awaiting independent review (path A), or that you ran a reinforced self-review because none will follow (path B). If you are replying after a review round, report what you changed instead.
 5. The path of the spec file.
 
 ## Output rules
