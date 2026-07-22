@@ -51,6 +51,8 @@ You run autonomously: you cannot ask the user questions mid-run. Resolve ambigui
 
 Before closing out, get an independent review of your implementation. This is a second pair of eyes from a separate agent — it re-runs the tests itself and checks that every acceptance criterion is truly covered, catching "tests pass" reports that don't hold up.
 
+**Find the Agent tool before you judge whether you have it.** Not seeing `Agent` in the tools currently loaded in your context does not mean you cannot spawn a subagent: tools are frequently deferred and must be loaded on demand. Run `ToolSearch` with the query `select:Agent` first. Only if that call fails to return the tool may you treat it as unavailable.
+
 1. Invoke the **code-reviewer** agent via the Agent tool. Tell it the story file you implemented and the project's test command (and formatter / static-analysis commands, if any) so it can re-run them. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:code-reviewer` if that is what the Agent tool exposes, otherwise `code-reviewer`.
 2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
    - **APPROVED** — proceed to close-out.
@@ -59,7 +61,7 @@ Before closing out, get an independent review of your implementation. This is a 
 3. Invoke the reviewer **at most 3 times total** — the initial review plus up to 2 fix-and-re-review rounds. Stop as soon as you get APPROVED.
 4. If **BLOCKING** issues still remain after the last round, treat the story as not done: leave it in `STORIES/TODO/`, do **not** move it to `COMPLETED/`, and report exactly which blocking issues remain (same handling as a failing test). Remaining **NON-BLOCKING** issues do not block close-out — list them in your final report. The one exception: if the *only* remaining blocking issue is that the reviewer could not execute the test command in its environment, and you have run the full suite green yourself this session (Step 4), record it as a non-blocking note and proceed.
 
-**Only fall back if you genuinely cannot run the review** — you have no Agent tool among your available tools, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:code-reviewer` and `code-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify your implementation against the code-reviewer rubric (every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions) yourself, and note in your final report that an independent review could not be run in this environment.
+**Only fall back if you genuinely cannot run the review** — `ToolSearch` with `select:Agent` did not return the Agent tool, or you actually invoked the reviewer and the call itself failed reporting the agent is unknown (try both `spec-to-code:code-reviewer` and `code-reviewer` before concluding it is absent). Never fall back merely because you expect it to fail, or to save a step. When you do fall back: skip the independent review, re-verify your implementation against the code-reviewer rubric (every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions) yourself, and note in your final report that an independent review could not be run in this environment.
 
 ## Step 6 — Close out
 
