@@ -125,13 +125,27 @@ The spec has no code to test, so "regression" here means: would the changes the 
 
 Pay special attention to anything shared across features: shared models/schema and migrations, common base classes or utilities, auth/permission rules, and public API or event contracts. If you cannot rule out a regression for a modified target, add it to **Assumptions & Decisions** as an open risk rather than leaving it implicit.
 
+## Step 5 — Independent review loop
+
+Before finishing, get an independent review of the spec you wrote. This is a second pair of eyes from a separate agent running a cheaper model — it catches gaps your own self-check misses.
+
+1. Invoke the **spec-reviewer** agent via the Agent tool, telling it which spec file in `STORIES/SPECS/` you just wrote. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:spec-reviewer` if that is what the Agent tool exposes, otherwise `spec-reviewer`.
+2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
+   - **APPROVED** — proceed to the final report.
+   - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct), overwrite the spec, then invoke spec-reviewer again on the updated file.
+3. Run **at most 2 review rounds** (up to 3 reviewer calls total). Stop as soon as you get APPROVED.
+4. If BLOCKING issues still remain after the last round, do not block the pipeline: append a `## Review Notes (unresolved)` section to the spec listing them, and surface them in your final report so the user can decide. The pipeline must never get stuck waiting on the reviewer.
+
+**If you cannot run the independent review** — the Agent tool is not available to you (older Claude Code versions do not expose sub-agent dispatch inside a sub-agent), or the spec-reviewer agent is not installed in this project: skip the independent review, re-verify the spec against the spec-reviewer rubric (completeness, resolved decisions, verified paths, regression-safety of changes to existing code) yourself, and note in your final report that an independent review could not be run in this environment.
+
 ## Final report
 
 End your run by reporting back:
 1. A one-paragraph summary of the feature as specced.
 2. The list of assumptions and decisions you made (so the user can review them without opening the file).
 3. Any breaking changes or regression risks the spec introduces to existing code (from the regression-risk review), or "none" if the changes are all additive.
-4. The path of the spec file.
+4. The independent review outcome: approved, or the unresolved review notes that remain (or that the review could not be run in this environment).
+5. The path of the spec file.
 
 ## Output rules
 

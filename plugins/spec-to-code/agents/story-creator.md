@@ -84,9 +84,23 @@ Check your output against this list and fix anything that fails:
 - [ ] Every story's H1 title matches its filename (minus `.md`).
 - [ ] Dependencies only reference lower-numbered stories from the same spec.
 
+## Independent review loop
+
+Before finishing, get an independent review of the stories you wrote. This is a second pair of eyes from a separate agent running a cheaper model — it catches coverage gaps and drift your own self-check misses.
+
+1. Invoke the **story-reviewer** agent via the Agent tool, telling it the spec name and that the stories are in `STORIES/TODO/`. Its registered name may be namespaced depending on how this pipeline was installed — use `spec-to-code:story-reviewer` if that is what the Agent tool exposes, otherwise `story-reviewer`.
+2. Read its verdict — its response begins with `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED`.
+   - **APPROVED** — proceed to the final report.
+   - **CHANGES_REQUESTED** — fix every BLOCKING issue it lists (and NON-BLOCKING ones where the fix is cheap and clearly correct) by editing, splitting, merging, or renumbering the affected story files, then invoke story-reviewer again.
+3. Run **at most 2 review rounds** (up to 3 reviewer calls total). Stop as soon as you get APPROVED.
+4. If BLOCKING issues still remain after the last round, do not block the pipeline: surface them in your final report, and where an issue is localized to one story, append a short `## Review Notes (unresolved)` section to that story file. The pipeline must never get stuck waiting on the reviewer.
+
+**If you cannot run the independent review** — the Agent tool is not available to you (older Claude Code versions do not expose sub-agent dispatch inside a sub-agent), or the story-reviewer agent is not installed in this project: skip the independent review, re-verify the stories against the story-reviewer rubric (full coverage with no orphans or duplicates, faithful-to-spec wording, INVEST, correct numbering, valid dependencies) yourself, and note in your final report that an independent review could not be run in this environment.
+
 ## Final report
 
 End your run by reporting back:
 1. The list of created story files, each with a one-line summary.
 2. The implementation order.
 3. Any deviations from the spec's Suggested Story Breakdown, with reasons, and any ambiguities you noticed in the spec.
+4. The independent review outcome: approved, or the unresolved review notes that remain (or that the review could not be run in this environment).

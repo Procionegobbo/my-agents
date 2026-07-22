@@ -10,10 +10,22 @@ This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus 
 |---|---|---|
 | `stories-init` | haiku | One-time setup — creates the required folder structure |
 | `spec-builder` | opus | Expands a rough draft into a complete, implementation-ready specification |
+| `spec-reviewer` | haiku | Independently audits a spec against a fixed rubric and returns a pass/fail verdict |
 | `story-creator` | sonnet | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
+| `story-reviewer` | haiku | Independently audits the stories for coverage, INVEST, and faithfulness to the spec |
 | `laravel-feature-builder` | opus | Implements a story end-to-end in a Laravel codebase |
+| `code-reviewer` | sonnet | Independently reviews an implementation, re-running the tests and checking acceptance-criteria coverage |
 
 > **Note:** `laravel-feature-builder` is the first of a family of feature-builder agents. Future agents (`go-feature-builder`, `python-feature-builder`, `express-feature-builder`, etc.) share the same folder structure and conventions and can be dropped in without changes to the other agents.
+
+### Built-in review loop
+
+Each producing agent runs a **generator → independent review** loop before finishing: after its own self-check, it invokes the matching reviewer agent (a separate agent, on a cheaper model, with a clean context) which audits the output against a fixed rubric and returns a structured `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED` (with issues classified BLOCKING / NON-BLOCKING). The producer fixes the blocking issues and re-reviews, up to **2 rounds**, then finishes.
+
+- **spec-builder → spec-reviewer**, **story-creator → story-reviewer**: never block the pipeline. Any blocking issue left after the last round is recorded as a `Review Notes (unresolved)` note and surfaced in the final report for you to decide on.
+- **feature-builder → code-reviewer**: the review is a real gate. A blocking issue that survives the last round (a failing test, an uncovered acceptance criterion) keeps the story in `STORIES/TODO/` — it is not moved to `COMPLETED/` — exactly like a failing test.
+
+The loop runs automatically inside each step; you invoke the pipeline exactly as before. Reviewers can also be run standalone on an existing artifact. The loop needs a Claude Code version that exposes sub-agent dispatch to sub-agents (**v2.1.172+**); on older versions each agent falls back to a reinforced self-review against the same rubric and says so in its report.
 
 ## Skills
 
@@ -85,13 +97,13 @@ Your idea / draft
       │
       ▼
   spec-builder        ← write a draft in STORIES/SPECS/, then run this
-      │
+      │  └─ spec-reviewer     (automatic review loop, ≤2 rounds)
       ▼
   story-creator       ← run on the completed spec
-      │
+      │  └─ story-reviewer    (automatic review loop, ≤2 rounds)
       ▼
  feature-builder      ← run on each story in STORIES/TODO/
-      │
+      │  └─ code-reviewer     (automatic review loop, ≤2 rounds — gates close-out)
       ▼
    STORIES/COMPLETED/ ← story is moved here when done
 ```
