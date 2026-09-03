@@ -20,10 +20,12 @@ This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus 
 
 ### Built-in review loop
 
-Each producing agent is paired with a **generator → independent review** loop: once the producer finishes its own self-check, the matching reviewer agent (a separate agent, on a cheaper model, with a clean context) audits the output against a fixed rubric and returns a structured `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED` (with issues classified BLOCKING / NON-BLOCKING). The producer fixes the blocking issues and the reviewer re-audits, up to **2 rounds**.
+Each producing agent is paired with a **generator → independent review** loop: once the producer finishes its own self-check, the matching reviewer agent (a separate agent, on a cheaper model, with a clean context) audits the output against a fixed rubric and returns a structured `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED` (with issues classified BLOCKING / NON-BLOCKING). The producer fixes the blocking issues and the reviewer re-audits.
 
-- **spec-builder → spec-reviewer**, **story-creator → story-reviewer**: never block the pipeline. Any blocking issue left after the last round is recorded as a `Review Notes (unresolved)` note and surfaced in the final report for you to decide on.
-- **feature-builder → code-reviewer**: the review is a real gate. A blocking issue that survives the last round (a failing test, an uncovered acceptance criterion) keeps the story in `STORIES/TODO/` — it is not moved to `COMPLETED/` — exactly like a failing test.
+**Reviewers are read-only by construction.** `spec-reviewer` and `story-reviewer` are declared with `tools: Read, Grep, Glob` — they physically cannot write a file or execute anything. They judge the artifact's structural soundness and its congruence with the existing codebase by *reading* it. `code-reviewer` additionally gets `Bash`, because it must genuinely re-run the test suite, but it has no `Write`/`Edit`: a gap it finds is reported, never filled. This is enforced by the frontmatter, not merely asked for in the prompt — a reviewer that "helpfully" implements part of the feature burns tokens on code the builder discards and rewrites anyway.
+
+- **spec-builder → spec-reviewer**, **story-creator → story-reviewer** — *advisory*, **1 fix round**. Never block the pipeline. Any blocking issue left after the last round is recorded as a `Review Notes (unresolved)` note and surfaced in the final report for you to decide on. Since surviving issues get written down either way, a second fix round costs tokens without adding safety.
+- **feature-builder → code-reviewer** — *blocking gate*, **2 fix rounds**. A blocking issue that survives the last round (a failing test, an uncovered acceptance criterion) keeps the story in `STORIES/TODO/` — it is not moved to `COMPLETED/` — exactly like a failing test. The extra round is worth its cost here because it decides close-out.
 
 **The loop is driven by the `run-stage` skill, not by the producing agents.** Claude Code exposes sub-agent dispatch only at the top level: an agent running as a subagent has no way to spawn another one, so the producers cannot invoke their own reviewers. `run-stage` runs in the main session, where it *can* spawn both, and passes the verdict back to the producer — which is resumed with its context intact, so the fix round is cheap.
 
@@ -33,15 +35,30 @@ Practical consequence: **launch pipeline stages through `run-stage`**, not by na
 > /spec-to-code:run-stage spec-builder on STORIES/SPECS/user-search.md
 ```
 
-Invoked directly, a producer still works — it just falls back to a reinforced self-review against the same rubric and says so in its report. For feature-builder that means the story closes out on a self-review rather than a real review gate.
-
 Reviewers can also be run standalone on an existing artifact.
+
+### Running a stage without the review gate
+
+Sometimes the gate is not worth it — a tiny draft, a fast iteration on wording, or an artifact you have already read yourself. Just ask for it:
+
+```
+> /spec-to-code:run-stage spec-builder on STORIES/SPECS/user-search.md, no review
+```
+
+`run-stage` then spawns the producer alone: no reviewer, no fix rounds, one agent and one run. The producer falls back to a **reinforced self-review** — it re-checks its own artifact against the same rubric the reviewer would have used, and says so in its report. Cheap, because it still holds its codebase exploration.
+
+Two things to know:
+
+- This is self-review, not *no* review. It is the author grading their own work, which is precisely the blind spot the independent gate exists to cover.
+- For a **feature-builder** the gate is blocking, and it is the only thing that independently re-runs the test suite. Skipping it means the story moves to `COMPLETED/` on the builder's own word that its tests pass. `run-stage` says so before proceeding, then respects your call.
+
+Naming an agent directly instead of going through `run-stage` has the same effect — the review loop is keyed on a marker that only `run-stage` passes — but asking explicitly is clearer about what you are giving up.
 
 ## Skills
 
 | Skill | Purpose |
 |---|---|
-| `run-stage` | Runs one pipeline stage (`spec-builder`, `story-creator`, or a `<stack>-feature-builder`) together with its independent review gate. This is the intended entry point for every stage. |
+| `run-stage` | Runs one pipeline stage (`spec-builder`, `story-creator`, or a `<stack>-feature-builder`) together with its independent review gate — or without it, if you ask. This is the intended entry point for every stage. |
 | `create-feature-builder` | Generates a `<stack>-feature-builder` agent tailored to the current repo — detects the stack, explores the codebase, and writes the agent into `.claude/agents/`. Automates the manual process described in *Adding a new feature-builder*. |
 
 Invoke them as slash commands. Installed as a plugin, skills are namespaced: `/spec-to-code:run-stage`, `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, they are `/run-stage` and `/create-feature-builder`.
@@ -108,18 +125,18 @@ Your idea / draft
       │
       ▼
   spec-builder        ← write a draft in STORIES/SPECS/, then run this
-      │  └─ spec-reviewer     (review loop, ≤2 rounds)
+      │  └─ spec-reviewer     (advisory, 1 fix round)
       ▼
   story-creator       ← run on the completed spec
-      │  └─ story-reviewer    (review loop, ≤2 rounds)
+      │  └─ story-reviewer    (advisory, 1 fix round)
       ▼
  feature-builder      ← run on each story in STORIES/TODO/
-      │  └─ code-reviewer     (review loop, ≤2 rounds — gates close-out)
+      │  └─ code-reviewer     (blocking, 2 fix rounds — gates close-out)
       ▼
    STORIES/COMPLETED/ ← story is moved here when done
 ```
 
-Each of the three producer/reviewer pairs is driven by the `run-stage` skill — launch every stage with it (`/spec-to-code:run-stage <agent> on <path>`) so the review gate actually runs.
+Each of the three producer/reviewer pairs is driven by the `run-stage` skill — launch every stage with it (`/spec-to-code:run-stage <agent> on <path>`) so the review gate actually runs. Add `no review` to the request to run a stage without it.
 
 ---
 

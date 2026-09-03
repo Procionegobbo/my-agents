@@ -4,14 +4,15 @@ description: >-
   Run a spec-to-code pipeline stage (spec-builder, story-creator, or any
   <stack>-feature-builder) together with its independent review gate. Use whenever the
   user asks to run one of those agents, to review a spec/story/implementation, or to take
-  a feature through the STORIES pipeline. The review loop must be orchestrated from the
-  top level because subagents cannot spawn subagents.
+  a feature through the STORIES pipeline — including when they ask to run one *without*
+  review, which this skill also covers. The review loop must be orchestrated from the top
+  level because subagents cannot spawn subagents.
 ---
 
 # run-stage
 
 Runs one pipeline stage as **producer → independent reviewer → fix → re-review**, up to
-2 fix rounds.
+2 fix rounds for the blocking stage and 1 for the advisory ones (see *Round caps*).
 
 Each producing agent used to spawn its own reviewer. It cannot: the harness exposes the
 `Agent` tool only at the top level, so a subagent has no spawn primitive at all (`ToolSearch
@@ -27,6 +28,35 @@ you treat them as unavailable and drop to "If you cannot spawn either" below.
 
 **Run this skill inline.** Do not delegate the orchestration itself to a subagent — it
 would land in the same position and be unable to spawn anything.
+
+## Skipping the review gate
+
+If the user explicitly asks for the producer **without** a review — "senza review", "no review
+loop", "just run spec-builder", "solo il producer", "quick pass" — honour it. Do not run the
+protocol below. Instead:
+
+1. Spawn the producer exactly as in step 1, but **omit the `[run-stage:review-follows]`
+   marker**. Its absence is the whole switch: the producer then takes its path B and runs a
+   reinforced self-review against the matching reviewer's rubric before finishing.
+2. Spawn no reviewer, send no follow-up. Report the producer's summary and state plainly that
+   the artifact had no independent review — only the producer's own self-check.
+
+This is a legitimate mode, not a degraded one: one agent, one run, no fix rounds. It is the
+right trade when the draft is small, when you are iterating fast on wording, or when the user
+has already reviewed the artifact themselves.
+
+Two cautions, stated once and then respect the user's call:
+
+- Path B is *self*-review, not *no* review. It is cheap — the agent already holds its codebase
+  exploration — but it is the author grading their own work, which is exactly the blind spot
+  the gate exists to cover.
+- For a `<stack>-feature-builder` the gate is **blocking**, not advisory: it is what decides
+  whether the story closes out, and it is the only thing that independently re-runs the test
+  suite. Skipping it there means the story moves to `COMPLETED/` on the builder's own word that
+  its tests pass. Say so before proceeding; if the user confirms, proceed.
+
+If the user asks to skip the review for one stage of a chain but not the others, apply it only
+to that stage.
 
 ## Stage map
 
@@ -71,6 +101,13 @@ Invoke the matching reviewer with `run_in_background: false`, telling it the art
 (and, for `code-reviewer`, the project's test command so it can re-run the suite). Record
 its `agentId` too.
 
+Keep the reviewer prompt short: the artifact path, the project root if it differs, and the
+test command. Do not paste the producer's report, the spec's contents, or your own summary
+into it — the reviewer reads the artifact from disk, and re-sending it doubles the cost of
+the gate. `spec-reviewer` and `story-reviewer` are read-only by construction (no `Write`,
+`Edit`, or `Bash`): they audit the artifact's structural soundness and its congruence with
+the existing code by reading, and cannot implement or test anything. Do not ask them to.
+
 Its response carries a `VERDICT: APPROVED` or `VERDICT: CHANGES_REQUESTED` line, with
 issues classified BLOCKING / NON-BLOCKING.
 
@@ -100,8 +137,14 @@ findings under `VERDICT: APPROVED` has approved the work.
    artifact. Continuing it keeps its own prior findings in view, so it can confirm each was
    addressed rather than re-deriving the rubric from scratch.
 
-**At most 3 reviewer invocations total** — the initial review plus 2 re-reviews. Stop as
-soon as you get `VERDICT: APPROVED`.
+**Round caps.** Stop as soon as you get `VERDICT: APPROVED`, and otherwise:
+
+- **advisory stages** (`spec-builder`, `story-creator`) — at most **2** reviewer invocations:
+  the initial review plus 1 re-review. Blocking issues that survive get written down as
+  `## Review Notes (unresolved)` either way, so a third round buys tokens, not safety.
+- **the blocking stage** (`<stack>-feature-builder`) — at most **3**: the initial review plus
+  2 re-reviews. Here the extra round decides whether the story closes out, so it earns its
+  cost.
 
 ### 4. Close out the stage
 
