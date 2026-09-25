@@ -25,6 +25,7 @@ Explore in this order, stopping as soon as you have what the spec needs:
 3. **Infer the architecture** — the top-level folder structure.
 4. **Study 2–3 similar features** — their routes, models, components, and tests. These are your primary precedent for naming, file placement, base classes, and shared utilities.
 5. **Targeted searches** for what the spec needs: auth/policies, validation, storage layer, frontend approach, test framework and patterns.
+6. **Related specs** — list `STORIES/SPECS/` and read, in the specs this feature builds on or depends on, the parts that define shared pieces (routing, layouts, error handling, stores, naming conventions). Where those pieces are specified but not built yet, the spec is the only precedent — skipping it produces a spec that contradicts its neighbours.
 
 Read to answer a specific question in the spec, never to survey the codebase. Every file you read stays in your context for the rest of the run and is re-billed on every later turn, so:
 
@@ -47,7 +48,7 @@ Overwrite the draft in place with a single `Write`.
 
 Include the sections below, in order. If a section is genuinely not applicable, keep its heading with a one-line statement (e.g. *"No configuration required."*). Never silently skip one.
 
-**State each fact once.** Every section below has one job; cross-reference instead of repeating (e.g. "see *Data Model*"). In particular: **Impact on Existing Code** is the only complete file list; stack-specific sections describe behaviour and point to it rather than re-listing paths; **Success Criteria** reference test cases rather than restating them. Scale length to the feature — a small feature gets a short spec. Code snippets are for signatures, schemas, and contracts that would otherwise be ambiguous, not implementations.
+**State each fact once.** Every section below has one job; cross-reference instead of repeating (e.g. "see *Data Model*"). In particular: **Impact on Existing Code** is the only complete file list; stack-specific sections describe behaviour and point to it rather than re-listing paths; **Success Criteria** reference test cases rather than restating them. Scale length to the feature — a small feature gets a short spec. Code snippets are for signatures, schemas, and contracts that would otherwise be ambiguous, not implementations. Shorter must come from removing repetition, never from leaving details for the implementer to invent: user-facing copy, error-to-UI mappings, accessibility roles, and contracts stay complete.
 
 ### Required sections
 
