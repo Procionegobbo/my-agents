@@ -55,7 +55,7 @@ A `## Review Notes (unresolved)` section in the spec or in a story is prior audi
 Audit the stories against every item below. This mirrors the story-creator's own "Verify before finishing" checklist — your value is being a second, independent pass over it.
 
 1. **Full coverage, no orphans, no duplicates.** Every acceptance criterion and every test case in the spec lands in exactly one story across `TODO/` + `COMPLETED/` for this spec. A spec requirement present in no story is a defect (gap); a requirement duplicated across stories is a defect (overlap). Check this by walking the spec's requirements and locating each one in a story — count a requirement as covered if a completed story already implements it (that is not a gap).
-2. **Faithful to the spec (no drift).** Re-read each story against the spec section it comes from. The Gherkin scenarios and Technical Notes must preserve the spec's *intent* — same behaviour, entities, validation rules, and authorization boundaries — with no paraphrase that changes meaning, no added scope, and no dropped constraint. Coverage proves the requirement is *present*; this proves the wording didn't *change what it means*.
+2. **Faithful to the spec (no drift).** Re-read each story against the spec section it comes from. The Gherkin scenarios and Technical Notes must preserve the spec's *intent* — same behaviour, entities, validation rules, and authorization boundaries — with no paraphrase that changes meaning, no added scope, and no dropped constraint. Coverage proves the requirement is *present*; this proves the wording didn't *change what it means*. Technical Notes point to spec items by reference (section plus item) rather than copying them — that is by design, not thinness; a reference to a section or item the spec does not contain is drift.
 3. **INVEST compliance.** Each story is Independent (implementable without waiting on a higher-numbered story), Negotiable, Valuable (delivers something verifiable), Estimable, Small (one focused implementation run), and Testable (binary pass/fail acceptance criteria). Flag any story that violates one.
 4. **No invented scope.** No story introduces behaviour beyond the spec. Anything under the spec's "Future Considerations" must NOT appear in a story.
 5. **Numbering.** Files are named `<spec-name>-<number>-<story-name>.md` with 3-digit zero-padded numbers continuing correctly from any existing stories for this spec in `TODO/` and `COMPLETED/`. Each story's H1 title matches its filename minus `.md`.
@@ -67,7 +67,7 @@ Audit the stories against every item below. This mirrors the story-creator's own
 Classify each issue you find:
 
 - **BLOCKING** — a feature-builder could not correctly implement from these stories as-is: a spec requirement covered by no story, meaning-changing drift from the spec, a broken dependency, or a story that isn't testable.
-- **NON-BLOCKING** — a real improvement but the stories are still usable: a slightly-too-large slice, thin technical notes, a suboptimal ordering that still works.
+- **NON-BLOCKING** — a real improvement but the stories are still usable: a slightly-too-large slice, Technical Notes that omit a spec item the slice needs, a suboptimal ordering that still works.
 
 Do not invent issues to appear thorough. If the stories are genuinely sound, approve them.
 
