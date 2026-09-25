@@ -1,6 +1,6 @@
 # Agents — Developer Guide
 
-This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus a skill that cover the full lifecycle of a feature: from rough idea to implemented code. The agents are designed to work together in a defined sequence, each handing off to the next. The repo doubles as its own plugin **marketplace** (`my-agents`), so it can be installed with one command.
+This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus skills that cover the full lifecycle of a feature: from rough idea to implemented code. The agents are designed to work together in a defined sequence, each handing off to the next. The repo doubles as its own plugin **marketplace** (`my-agents`), so it can be installed with one command.
 
 ---
 
@@ -8,7 +8,6 @@ This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus 
 
 | Agent | Model | Purpose |
 |---|---|---|
-| `stories-init` | haiku | One-time setup — creates the required folder structure |
 | `spec-builder` | opus | Expands a rough draft into a complete, implementation-ready specification |
 | `spec-reviewer` | haiku | Independently audits a spec against a fixed rubric and returns a pass/fail verdict |
 | `story-creator` | opus | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
@@ -25,7 +24,7 @@ Each producing agent is paired with a **generator → independent review** loop:
 **Reviewers are read-only by construction.** `spec-reviewer` and `story-reviewer` are declared with `tools: Read, Grep, Glob` — they physically cannot write a file or execute anything. They judge the artifact's structural soundness and its congruence with the existing codebase by *reading* it. `code-reviewer` additionally gets `Bash`, because it must genuinely re-run the test suite, but it has no `Write`/`Edit`: a gap it finds is reported, never filled. This is enforced by the frontmatter, not merely asked for in the prompt — a reviewer that "helpfully" implements part of the feature burns tokens on code the builder discards and rewrites anyway.
 
 - **spec-builder → spec-reviewer**, **story-creator → story-reviewer** — *advisory*, **1 fix round**. Never block the pipeline. Any blocking issue left after the last round is recorded as a `Review Notes (unresolved)` note and surfaced in the final report for you to decide on. Since surviving issues get written down either way, a second fix round costs tokens without adding safety.
-- **feature-builder → code-reviewer** — *blocking gate*, **2 fix rounds**. A blocking issue that survives the last round (a failing test, an uncovered acceptance criterion) keeps the story in `STORIES/TODO/` — it is not moved to `COMPLETED/` — exactly like a failing test. The extra round is worth its cost here because it decides close-out.
+- **feature-builder → code-reviewer** — *blocking gate*, **2 fix rounds**. A blocking issue that survives the last round (a failing test, an uncovered acceptance criterion) keeps the story in `STORIES/TODO/` — it is not moved to `COMPLETED/` — exactly like a failing test. The extra round is worth its cost here because it decides close-out. In a fix round the builder re-runs only the tests the fix touched; the full suite runs once per round, in the reviewer.
 
 **The loop is driven by the `run-stage` skill, not by the producing agents.** Claude Code exposes sub-agent dispatch only at the top level: an agent running as a subagent has no way to spawn another one, so the producers cannot invoke their own reviewers. `run-stage` runs in the main session, where it *can* spawn both, and passes the verdict back to the producer — which is resumed with its context intact, so the fix round is cheap.
 
@@ -58,10 +57,11 @@ Naming an agent directly instead of going through `run-stage` has the same effec
 
 | Skill | Purpose |
 |---|---|
+| `stories-init` | One-time setup — creates the `STORIES/` folder structure, adding only what is missing. `run-stage` also does this automatically when the folder is missing. |
 | `run-stage` | Runs one pipeline stage (`spec-builder`, `story-creator`, or a `<stack>-feature-builder`) together with its independent review gate — or without it, if you ask. This is the intended entry point for every stage. |
 | `create-feature-builder` | Generates a `<stack>-feature-builder` agent tailored to the current repo — detects the stack, explores the codebase, and writes the agent into `.claude/agents/`. Automates the manual process described in *Adding a new feature-builder*. |
 
-Invoke them as slash commands. Installed as a plugin, skills are namespaced: `/spec-to-code:run-stage`, `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, they are `/run-stage` and `/create-feature-builder`.
+Invoke them as slash commands. Installed as a plugin, skills are namespaced: `/spec-to-code:stories-init`, `/spec-to-code:run-stage`, `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, they are `/stories-init`, `/run-stage` and `/create-feature-builder`.
 
 ---
 
@@ -103,7 +103,7 @@ Claude Code discovers plugins, agents, and skills at session start — no config
 
 ## Folder structure
 
-All agents operate on a shared `STORIES/` directory at the root of your project. Run `stories-init` once to create it.
+All agents operate on a shared `STORIES/` directory at the root of your project. Run the `stories-init` skill once to create it (or just start with `run-stage`, which creates it if missing).
 
 ```
 STORIES/
@@ -121,7 +121,7 @@ STORIES/
 Your idea / draft
       │
       ▼
- stories-init        ← run once per project
+ stories-init        ← run once per project (skill; run-stage does it if missing)
       │
       ▼
   spec-builder        ← write a draft in STORIES/SPECS/, then run this
@@ -147,10 +147,10 @@ Each of the three producer/reviewer pairs is driven by the `run-stage` skill —
 Run this once per project, before using any other agent.
 
 ```
-> Run stories-init
+> /spec-to-code:stories-init
 ```
 
-The agent will:
+The skill will:
 - Create `STORIES/SPECS/`, `STORIES/TODO/`, and `STORIES/COMPLETED/`, each with a `.gitkeep` so they are tracked by Git.
 - Create an empty `STORIES/COMPLETED.md` index file.
 - Create only what is missing and never touch existing files, so it is safe to re-run on a complete or partial structure.
@@ -289,7 +289,7 @@ By default the skill detects the stack from the repository root. In a **monorepo
 
 Because a monorepo produces several builders, the skill proposes a per-service name (e.g. `server-feature-builder`) and asks you to confirm it, so builders for different services don't collide. Run it once per service you want to support.
 
-The `stories-init`, `spec-builder`, and `story-creator` agents are stack-agnostic and require no changes.
+The `stories-init` skill and the `spec-builder` and `story-creator` agents are stack-agnostic and require no changes.
 
 > Prefer to write it by hand? Copy `laravel-feature-builder.md`, rename it `<stack>-feature-builder.md`, keep the same frontmatter fields (`name`, `description`, `model`, `color`) with a one-sentence `description` that points to `run-stage`, and adapt the stack-specific steps. Keep Step 5 and the final report identical — they are pipeline invariants shared across all feature-builders.
 
@@ -314,4 +314,6 @@ Because story files are prefixed per spec, two branches never create files with 
 - **Story numbering** — stories are named `<spec-name>-<number>-<story-name>.md`, and numbering is scoped per spec (each spec starts at `001`). The story-creator checks both `STORIES/TODO/` and `STORIES/COMPLETED/` for files sharing the same spec-name prefix to find the highest existing number for that spec and increments from there. Because numbers are per-spec, multiple developers can work on different specs in parallel without story-number conflicts.
 - **Spec overwrites draft** — `spec-builder` replaces the draft in-place. If the draft is committed and unmodified, git preserves the original; otherwise the agent first copies it to `<name>.draft.md` so no work is lost.
 - **COMPLETED.md is append-only** — feature-builder agents only append to this file. They never truncate or overwrite it.
+- **Upgrading from 4.x** — `stories-init` is now a skill, not an agent. With a plugin install nothing changes for you. With a manual copy, delete the old `.claude/agents/stories-init.md` and copy `skills/stories-init/`. Builders generated before 4.2 still carry the old multi-example `description`; re-run `create-feature-builder` to refresh them.
+- **Consistency check** — `python scripts/check_plugin.py` (run by CI on every PR) verifies the manifests, every agent's frontmatter, a 400-character budget on agent descriptions (they are loaded into every session), that each `*-feature-builder.md` matches the template from Step 5 to the end, and that the review-gate marker is present on both sides of the loop.
 - **Git tracking** — `.gitkeep` files ensure the empty folders are committed. They can be removed once real files exist in each folder.

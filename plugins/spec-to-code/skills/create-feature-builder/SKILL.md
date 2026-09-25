@@ -88,7 +88,8 @@ template already implies, and note "not configured" rather than inventing one.
 - Also check `~/.claude/agents/<name>.md`. Agent `name` fields must be unique across scopes,
   so on a global collision warn the user or offer a distinct name.
 - A missing `STORIES/` structure does **not** block generation (it's only needed when the
-  generated agent runs). If it's absent, suggest running `stories-init`.
+  generated agent runs). If it's absent, suggest the `stories-init` skill (or note that
+  `run-stage` creates it on first use).
 
 ## Phase 4 — Generate the agent
 
