@@ -11,9 +11,9 @@ This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus 
 | `stories-init` | haiku | One-time setup — creates the required folder structure |
 | `spec-builder` | opus | Expands a rough draft into a complete, implementation-ready specification |
 | `spec-reviewer` | haiku | Independently audits a spec against a fixed rubric and returns a pass/fail verdict |
-| `story-creator` | sonnet | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
+| `story-creator` | opus | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
 | `story-reviewer` | sonnet | Independently audits the stories for coverage, INVEST, and faithfulness to the spec (drift detection is semantic work — hence sonnet) |
-| `laravel-feature-builder` | opus | Implements a story end-to-end in a Laravel codebase |
+| `laravel-feature-builder` | sonnet | Implements a story end-to-end in a Laravel codebase |
 | `code-reviewer` | sonnet | Independently reviews an implementation, re-running the tests and checking acceptance-criteria coverage |
 
 > **Note:** `laravel-feature-builder` is the first of a family of feature-builder agents. Future agents (`go-feature-builder`, `python-feature-builder`, `express-feature-builder`, etc.) share the same folder structure and conventions and can be dropped in without changes to the other agents.
@@ -291,7 +291,7 @@ Because a monorepo produces several builders, the skill proposes a per-service n
 
 The `stories-init`, `spec-builder`, and `story-creator` agents are stack-agnostic and require no changes.
 
-> Prefer to write it by hand? Copy `laravel-feature-builder.md`, rename it `<stack>-feature-builder.md`, keep the same frontmatter fields (`name`, `description`, `model`, `color`), and adapt the stack-specific steps. Keep Step 5 and the final report identical — they are pipeline invariants shared across all feature-builders.
+> Prefer to write it by hand? Copy `laravel-feature-builder.md`, rename it `<stack>-feature-builder.md`, keep the same frontmatter fields (`name`, `description`, `model`, `color`) with a one-sentence `description` that points to `run-stage`, and adapt the stack-specific steps. Keep Step 5 and the final report identical — they are pipeline invariants shared across all feature-builders.
 
 ---
 

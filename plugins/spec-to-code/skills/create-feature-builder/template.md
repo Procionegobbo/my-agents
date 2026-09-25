@@ -1,7 +1,7 @@
 ---
 name: {{AGENT_SLUG}}-feature-builder
-description: "Use this agent to implement a user story from STORIES/TODO/ end-to-end in a {{STACK}} application, following the project's established patterns. The story should have been produced by the story-creator agent and usually carries a Spec reference back to STORIES/SPECS/. The agent writes and runs tests, verifies every acceptance criterion, and only moves the story to STORIES/COMPLETED/ when the work is verified done.\n\nExamples:\n- <example>\n  Context: User has stories ready in STORIES/TODO/ for the user-search feature.\n  user: \"Run {{AGENT_SLUG}}-feature-builder on STORIES/TODO/user-search-001-basic.md\"\n  assistant: \"I'll use the {{AGENT_SLUG}}-feature-builder agent to implement the story end-to-end, run its tests until green, and move it to COMPLETED when every acceptance criterion is verified.\"\n  <commentary>\n  The user is asking for a story to be implemented, so the {{AGENT_SLUG}}-feature-builder agent should handle the full implement-test-verify cycle.\n  </commentary>\n</example>\n- <example>\n  Context: story-creator has just produced stories for the export feature.\n  user: \"Implement the first export story.\"\n  assistant: \"Let me launch the {{AGENT_SLUG}}-feature-builder agent on the first export story in STORIES/TODO/ to build the feature with tests following the project's existing patterns.\"\n  <commentary>\n  The pipeline step after story-creator is the feature-builder, which implements one story at a time from STORIES/TODO/.\n  </commentary>\n</example>"
-model: opus
+description: "Pipeline producer for {{STACK}}: implements one story from STORIES/TODO/ end-to-end with tests, then closes it out to STORIES/COMPLETED/. Launch it through the run-stage skill, which adds the blocking code-reviewer gate; invoking it directly closes the story out on self-review only."
+model: sonnet
 color: {{COLOR}}
 ---
 

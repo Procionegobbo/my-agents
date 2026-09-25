@@ -1,6 +1,6 @@
 ---
 name: spec-reviewer
-description: "Use this agent to independently review a specification produced by spec-builder before it is handed to story-creator. It reads the spec file in STORIES/SPECS/ and audits it against a fixed rubric — completeness, resolved decisions, verified file paths, and regression-safety of changes to existing code — then returns a structured APPROVED / CHANGES_REQUESTED verdict. It never edits the spec; it only judges it. Normally invoked by the run-stage skill as a review gate, but can be run standalone to sanity-check a spec.\n\nExamples:\n- <example>\n  Context: spec-builder has just written STORIES/SPECS/user-search.md and wants an independent check before finishing.\n  user: \"Review STORIES/SPECS/user-search.md\"\n  assistant: \"I'll use the spec-reviewer agent to audit the spec against the rubric and return a structured verdict.\"\n  <commentary>\n  The spec is complete and needs an independent review pass, so spec-reviewer audits it and returns APPROVED or CHANGES_REQUESTED.\n  </commentary>\n</example>"
+description: "Read-only reviewer: audits a spec in STORIES/SPECS/ against a fixed rubric and returns VERDICT: APPROVED or CHANGES_REQUESTED. Never edits. Spawned by the run-stage skill as spec-builder's review gate; can also be run standalone on an existing spec."
 model: haiku
 color: cyan
 tools: Read, Grep, Glob
