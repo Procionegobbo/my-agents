@@ -1,6 +1,6 @@
 ---
 name: story-reviewer
-description: "Use this agent to independently review the user stories produced by story-creator before they are handed to a feature-builder. It reads the stories in STORIES/TODO/ for a given spec and audits them against a fixed rubric — full coverage of the spec's acceptance criteria and tests, INVEST compliance, faithful (non-drifting) wording, correct numbering, and valid dependencies — then returns a structured APPROVED / CHANGES_REQUESTED verdict. It never edits the stories; it only judges them. Normally invoked by the run-stage skill as a review gate, but can be run standalone.\n\nExamples:\n- <example>\n  Context: story-creator has just written the user-search stories in STORIES/TODO/ and wants an independent check.\n  user: \"Review the user-search stories\"\n  assistant: \"I'll use the story-reviewer agent to audit the stories against the spec and rubric and return a structured verdict.\"\n  <commentary>\n  The stories are written and need an independent review pass, so story-reviewer audits coverage and INVEST and returns APPROVED or CHANGES_REQUESTED.\n  </commentary>\n</example>"
+description: "Read-only reviewer: audits the stories for one spec (coverage, INVEST, drift from the spec, numbering, dependencies) and returns VERDICT: APPROVED or CHANGES_REQUESTED. Never edits. Spawned by the run-stage skill as story-creator's review gate; can also be run standalone."
 model: sonnet
 color: pink
 tools: Read, Grep, Glob

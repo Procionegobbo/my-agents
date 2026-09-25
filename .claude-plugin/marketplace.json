@@ -8,7 +8,7 @@
     {
       "name": "spec-to-code",
       "source": "./plugins/spec-to-code",
-      "description": "Idea-to-code agent pipeline: stories-init, spec-builder, story-creator, per-stack feature-builders, and the create-feature-builder skill."
+      "description": "Idea-to-code agent pipeline: spec-builder, story-creator, per-stack feature-builders with independent reviewers, and the run-stage, stories-init and create-feature-builder skills."
     }
   ]
 }

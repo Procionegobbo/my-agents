@@ -88,7 +88,8 @@ template already implies, and note "not configured" rather than inventing one.
 - Also check `~/.claude/agents/<name>.md`. Agent `name` fields must be unique across scopes,
   so on a global collision warn the user or offer a distinct name.
 - A missing `STORIES/` structure does **not** block generation (it's only needed when the
-  generated agent runs). If it's absent, suggest running `stories-init`.
+  generated agent runs). If it's absent, suggest the `stories-init` skill (or note that
+  `run-stage` creates it on first use).
 
 ## Phase 4 — Generate the agent
 
@@ -114,7 +115,13 @@ placeholder verbatim:
 - **Color**: pick from the fixed palette `red, orange, yellow, green, blue, purple, cyan,
   pink` a value not already used by agents in the target repo's `.claude/agents/`; if all
   are taken, fall back to the first. (You only see the target repo's agents, not global ones.)
-- **Model**: keep `opus`.
+- **Model**: keep `sonnet`, matching `laravel-feature-builder`. The judgment-heavy work
+  (spec and slicing) already happened upstream on opus; the builder executes a small,
+  well-specified story and is checked by `code-reviewer`.
+- **Description**: keep it to the one sentence the template carries. Agent descriptions are
+  loaded into every session's context, so each extra line is paid on every conversation —
+  and example dialogues that name the builder directly teach the main session to bypass
+  `run-stage` and its review gate.
 
 **Self-validation (mandatory) before finishing:**
 - Re-read the generated file and confirm the frontmatter is valid YAML with all four fields present: `name`, `description`, `model`, `color`. Keep `description` a **double-quoted** scalar (the template already is) and escape any `"` you introduce as `\"` — an unquoted description with a `: ` in it silently drops the whole frontmatter at load time.

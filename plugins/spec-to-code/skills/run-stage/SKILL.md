@@ -72,6 +72,13 @@ namespaced name first, then the bare one.
 
 ## Protocol
 
+### 0. Make sure the workspace exists
+
+If `STORIES/` or any of `STORIES/SPECS/`, `STORIES/TODO/`, `STORIES/COMPLETED/` is missing,
+create it first exactly as the `stories-init` skill does (it is two idempotent commands),
+and mention it in your report. Do not stop to ask — a missing workspace is never a reason to
+fail a stage.
+
 ### 1. Spawn the producer
 
 Invoke it with `run_in_background: false` and **record the `agentId`** from its result —
@@ -131,7 +138,9 @@ findings under `VERDICT: APPROVED` has approved the work.
 1. `SendMessage` the **producer** at its recorded `agentId` with the reviewer's issues
    verbatim, split into BLOCKING and NON-BLOCKING, and ask it to fix every blocking issue
    (plus non-blocking ones where the fix is cheap and clearly correct) and reply with what
-   it changed. Continuing the same agent is deliberate — it still holds its codebase
+   it changed. Feature-builders re-run only the tests touched by the fix in this round — the
+   full suite is re-run by `code-reviewer` in the re-review, so running it twice per round
+   buys nothing. Continuing the same agent is deliberate — it still holds its codebase
    exploration, so the fix round is cheap.
 2. `SendMessage` the **reviewer** at its recorded `agentId` to re-audit the updated
    artifact. Continuing it keeps its own prior findings in view, so it can confirm each was
@@ -164,8 +173,10 @@ treat that section as advisory audit output rather than requirements.
   `COMPLETED.md` untouched. Report exactly which issues blocked it. Treat this like a
   failing test, not a formality.
 - One exception: if the *only* remaining blocking issue is that the reviewer could not
-  execute the test command in its environment, and the builder reported running the full
-  suite green itself, record it as non-blocking and let close-out proceed.
+  execute the test command in its environment, `SendMessage` the builder to run the full
+  suite itself on its current code (its fix rounds only re-run the touched tests). If it
+  reports the full suite green, record the issue as non-blocking and let close-out proceed;
+  otherwise the story stays in `STORIES/TODO/`.
 
 ### 5. Report
 
