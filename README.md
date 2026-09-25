@@ -215,7 +215,7 @@ The agent will:
    - Standard *As a / I want / So that* format
    - A `Spec:` reference back to the specification file
    - Gherkin acceptance criteria (Given / When / Then)
-   - Technical notes — the spec fragments relevant to that slice (schema, validation rules, file paths)
+   - Technical notes — references to the spec items that slice implements (schema, validation rules) and the file paths it touches; the feature-builder reads the full spec, so nothing is copied
    - The spec's test cases belonging to that slice
    - Priority and dependencies on other stories
 5. Save each story as a markdown file in `STORIES/TODO/`, named `<spec-name>-<number>-<story-name>.md`. Numbering is scoped per spec and starts at `001`.
