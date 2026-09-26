@@ -1,7 +1,7 @@
 {
   "name": "spec-to-code",
   "description": "Agent pipeline that takes a feature from rough draft to implemented, tested code: spec-builder, story-creator, and per-stack feature-builders, each paired with an independent reviewer (spec-reviewer, story-reviewer, code-reviewer) in a review loop driven by the run-stage skill, plus the stories-init and create-feature-builder skills.",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "author": {
     "name": "Federico Maiorini"
   },
