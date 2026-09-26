@@ -75,6 +75,7 @@ The spec's test cases that belong to this slice.
 ## Content rules
 
 - Every acceptance criterion and test case in the spec lands in exactly one story — no orphans, no duplicates.
+- Feature-wide Success Criteria (the whole test suite passing, lint/type-check gates, no new dependency, cross-cutting rules such as "every field has a label") hold for every story. Never make them one story's acceptance criteria — that story could not close until all the others do. Each story's definition of done is its own tests plus those gates.
 - Technical Notes point to slice-relevant spec items only: a data-model story references the schema; a form story references its validation rules.
 - No scope beyond the spec; "Future Considerations" stays out.
 - Dependencies may only point to lower-numbered stories within the same spec.
