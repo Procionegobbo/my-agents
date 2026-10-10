@@ -79,13 +79,14 @@ These apply to the code written or changed for the story. The feature-builder fo
 - [blocking] Writes that must succeed or fail together run in one transaction.
 - [blocking] No query inside a loop over a collection (N+1) — load relations up front or batch. Lists that can grow without bound are paginated or limited.
 - [advisory] Columns used for lookups, joins or uniqueness get an index; uniqueness and referential integrity are enforced by the database, not only in code.
+- [advisory] Values read from config or the environment are cast or checked where they are read; never assume their type or presence.
 - [advisory] Operations that can be retried (jobs, webhooks, resubmitted forms) are idempotent.
 - [advisory] Slow or external work (email, third-party calls, heavy processing) goes through the project's async mechanism when it has one; every outbound call has a timeout.
 
 **Design**
 - [advisory] Each unit does one thing; business logic lives where the project keeps it, not in the transport or view layer.
 - [advisory] No speculative generality: no parameter, option, interface or abstraction the story does not need. Duplicate twice before extracting.
-- [advisory] Names state what a thing is or does in domain terms. No magic numbers or strings — named constants or the project's enums.
+- [advisory] Names state what a thing is or does in domain terms. No magic numbers or strings in logic — named constants or the project's enums. Values inside a framework DSL (validation rules, route definitions, migration column sizes) stay inline unless they are reused.
 - [advisory] No dead code, commented-out code, debug output or stray TODOs left in the diff.
 
 **Tests**
