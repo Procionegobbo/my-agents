@@ -13,7 +13,7 @@ This repo is a Claude Code **plugin** (`spec-to-code`) — a set of agents plus 
 | `story-creator` | opus | Breaks a specification into INVEST-compliant user stories with acceptance criteria |
 | `story-reviewer` | sonnet | Independently audits the stories for coverage, INVEST, and faithfulness to the spec (drift detection is semantic work — hence sonnet) |
 | `laravel-feature-builder` | sonnet | Implements a story end-to-end in a Laravel codebase |
-| `code-reviewer` | sonnet | Independently reviews an implementation, re-running the tests and checking acceptance-criteria coverage |
+| `code-reviewer` | sonnet | Independently reviews an implementation, re-running the tests and checking acceptance-criteria coverage and the shared engineering standards |
 
 > **Note:** `laravel-feature-builder` is the first of a family of feature-builder agents. Future agents (`go-feature-builder`, `python-feature-builder`, `express-feature-builder`, etc.) share the same folder structure and conventions and can be dropped in without changes to the other agents.
 
@@ -241,13 +241,22 @@ Pick a story from `STORIES/TODO/` and run the appropriate feature-builder for yo
 The agent will:
 1. Read the story, its acceptance criteria, and the spec referenced by its `Spec:` line.
 2. Explore the codebase to detect the project's architecture, naming conventions, and existing patterns.
-3. Implement the feature end-to-end: migrations, models, controllers or Livewire components, form requests, services, routes, policies, and views.
-4. Write tests following the project's test conventions and run them until green, along with the formatter and static analysis if configured.
+3. Implement the feature end-to-end, test-first, one acceptance criterion at a time (failing test → minimum code → refactor): migrations, models, controllers or Livewire components, form requests, services, routes, policies, and views.
+4. Run the tests, formatter and static analysis until green, and check its own diff against the engineering standards (see below).
 5. Verify every acceptance criterion is satisfied, then run the project's full test suite once to catch regressions outside the touched areas.
-6. Hand off to `code-reviewer`, which re-runs the suite itself and audits acceptance-criteria coverage.
+6. Hand off to `code-reviewer`, which re-runs the suite itself and audits acceptance-criteria coverage and the engineering standards.
 7. Only once the review passes: move the story file from `STORIES/TODO/` to `STORIES/COMPLETED/` and append an entry to `STORIES/COMPLETED.md`. If something cannot be completed — a failing test, an unmet criterion, or a blocking review issue — the story stays in `STORIES/TODO/` and the agent reports exactly what failed.
 
 If requirements are ambiguous, the agent resolves them from the spec and codebase precedent and lists its judgment calls in the final report.
+
+### Engineering standards
+
+Every feature-builder and `code-reviewer` carry the same **Engineering standards** section: security (validation at the boundary, authorization on every action, no injection, allow-listed writes, no secrets in code or logs), correctness and robustness (no swallowed errors, transactions, no N+1, indexes, idempotency, timeouts), design (single responsibility, no speculative generality, no dead code) and test quality (behaviour over implementation, negative tests for authorization and validation, determinism, mocks only at boundaries). Each rule is tagged:
+
+- `[blocking]` — a violation is a BLOCKING review issue and keeps the story in `STORIES/TODO/`.
+- `[advisory]` — a violation is reported as NON-BLOCKING.
+
+Project conventions still decide style, naming and layering; the standards decide safety and correctness. When an existing feature breaks a standard, the new code follows the standard in the project's style and the builder declares the divergence in its report. `run-stage` passes that list to `code-reviewer`, so a declared divergence is not flagged as an invented pattern. Existing code the story does not need is never rewritten — wider refactors are suggested in the report.
 
 ---
 
@@ -277,7 +286,7 @@ To support a new language or framework, run the `create-feature-builder` skill i
 
 (Or `/create-feature-builder` if you installed via manual copy.)
 
-The skill detects the stack from the project's config files (asking you to confirm), explores the codebase for its test command, formatter, architecture, and precedent features, then writes a `<stack>-feature-builder.md` agent into `.claude/agents/` — tailored to that repo and following the same conventions as `laravel-feature-builder.md`. **Restart the session** afterwards so Claude Code discovers the new agent.
+The skill detects the stack from the project's config files (asking you to confirm), explores the codebase for its test command, formatter, architecture, and precedent features, then writes a `<stack>-feature-builder.md` agent into `.claude/agents/` — tailored to that repo and following the same conventions as `laravel-feature-builder.md`. Before writing, it shows you the stack, the commands (suggesting a tool where the formatter or static analysis is not configured) and the stack-specific implementation notes, and asks for one confirmation. **Restart the session** afterwards so Claude Code discovers the new agent.
 
 ### Monorepos — scoping to a subfolder
 
@@ -291,7 +300,7 @@ Because a monorepo produces several builders, the skill proposes a per-service n
 
 The `stories-init` skill and the `spec-builder` and `story-creator` agents are stack-agnostic and require no changes.
 
-> Prefer to write it by hand? Copy `laravel-feature-builder.md`, rename it `<stack>-feature-builder.md`, keep the same frontmatter fields (`name`, `description`, `model`, `color`) with a one-sentence `description` that points to `run-stage`, and adapt the stack-specific steps. Keep Step 5 and the final report identical — they are pipeline invariants shared across all feature-builders.
+> Prefer to write it by hand? Copy `laravel-feature-builder.md`, rename it `<stack>-feature-builder.md`, keep the same frontmatter fields (`name`, `description`, `model`, `color`) with a one-sentence `description` that points to `run-stage`, and adapt the stack-specific steps. Keep the Engineering standards section and everything from Step 5 to the end identical — they are pipeline invariants shared across all feature-builders (and, for Engineering standards, with `code-reviewer`).
 
 ---
 
@@ -316,6 +325,7 @@ Because story files are prefixed per spec, two branches never create files with 
 - **COMPLETED.md is append-only** — feature-builder agents only append to this file. They never truncate or overwrite it.
 - **Upgrading from 4.x** — `stories-init` is now a skill, not an agent. With a plugin install nothing changes for you. With a manual copy, delete the old `.claude/agents/stories-init.md` and copy `skills/stories-init/`. Builders generated before 4.2 still carry the old multi-example `description`; re-run `create-feature-builder` to refresh them.
 - **Upgrading to 5.1** — `spec-builder` and `story-creator` now declare a `tools` allowlist, and story Technical Notes reference spec items instead of copying them. With a manual copy, update `story-creator.md` and `story-reviewer.md` together: the old reviewer would flag reference-style notes as thin. Stories written before 5.1 keep working unchanged. 5.1.1 stops `story-creator` from parking the spec's feature-wide Success Criteria (whole suite, lint, no new dependency) in one story, which made that story unable to close before the others; update both files together here too.
+- **Upgrading to 6.0** — feature-builders now work test-first and carry the shared Engineering standards, and `code-reviewer` blocks on `[blocking]` standards it previously did not check, so a story that used to pass can now be sent back. Builders generated before 6.0 lack the new sections: re-run `create-feature-builder` in each project to regenerate them. With a manual copy, update `code-reviewer.md`, `run-stage` and every feature-builder together.
 - **Producer token cost** — both Opus producers are tuned for runtime cost, not just prompt length. Without a `tools` field a subagent inherits every tool of the parent session, MCP schemas included, and re-sends them on every turn, so both declare only what they use. `spec-builder` reads files by line range and batches lookups, states each fact once across the spec's sections, and applies review fixes as targeted edits instead of rewriting the file. `story-creator` reads only the spec, never the codebase. On a real frontend spec, an A/B run of `spec-builder` cost about 25% less (fewer output tokens, 43% fewer cache reads) with equivalent spec quality.
-- **Consistency check** — `python scripts/check_plugin.py` (run by CI on every PR) verifies the manifests, every agent's frontmatter, a 400-character budget on agent descriptions (they are loaded into every session), that each `*-feature-builder.md` matches the template from Step 5 to the end, and that the review-gate marker is present on both sides of the loop.
+- **Consistency check** — `python scripts/check_plugin.py` (run by CI on every PR) verifies the manifests, every agent's frontmatter, a 400-character budget on agent descriptions (they are loaded into every session), that each `*-feature-builder.md` matches the template from Step 5 to the end, that the Engineering standards section is identical in the template, every feature-builder and `code-reviewer` (with every rule tagged `[blocking]` or `[advisory]`), that the template's placeholders match the table in the `create-feature-builder` skill, and that the review-gate marker is present on both sides of the loop.
 - **Git tracking** — `.gitkeep` files ensure the empty folders are committed. They can be removed once real files exist in each folder.

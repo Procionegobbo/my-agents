@@ -23,6 +23,10 @@ DESCRIPTION_BUDGET = 400
 MARKER = "[run-stage:review-follows]"
 # Everything from this heading to the end of the file is shared by every feature-builder.
 INVARIANT_START = "## Step 5"
+# This section is shared by every feature-builder and code-reviewer.
+STANDARDS_START = "## Engineering standards"
+SKILL = SKILLS / "create-feature-builder" / "SKILL.md"
+REVIEWER = AGENTS / "code-reviewer.md"
 
 errors = []
 
@@ -56,6 +60,16 @@ def invariant(path):
     return text[i:]
 
 
+def standards(path):
+    text = path.read_text()
+    i = text.find(STANDARDS_START)
+    if i < 0:
+        fail(f"{path}: no '{STANDARDS_START}' section")
+        return ""
+    end = text.find("\n## ", i + 1)
+    return text[i:] if end < 0 else text[i:end]
+
+
 for manifest in [ROOT / ".claude-plugin" / "marketplace.json", PLUGIN / ".claude-plugin" / "plugin.json"]:
     try:
         json.loads(manifest.read_text())
@@ -74,7 +88,7 @@ for path in sorted(AGENTS.glob("*.md")) + [TEMPLATE]:
     if "<example>" in desc:
         fail(f"{path}: description contains <example> blocks")
     if path != TEMPLATE:
-        if "{{" in path.read_text():
+        if re.search(r"\{\{[A-Z_]+\}\}", path.read_text()):
             fail(f"{path}: unfilled template placeholder")
         name = fm.get("name")
         if name in names:
@@ -92,6 +106,20 @@ reference = invariant(TEMPLATE)
 for path in builders:
     if invariant(path) != reference:
         fail(f"{path}: sections from '{INVARIANT_START}' to the end differ from {TEMPLATE.name}")
+
+reference_standards = standards(TEMPLATE)
+for line in reference_standards.splitlines():
+    if line.startswith("- ") and not re.match(r"- \[(blocking|advisory)\] ", line):
+        fail(f"{TEMPLATE}: Engineering standards rule without a [blocking]/[advisory] tag: {line[:60]}")
+for path in [*builders, REVIEWER]:
+    if standards(path) != reference_standards:
+        fail(f"{path}: '{STANDARDS_START}' section differs from {TEMPLATE.name}")
+
+placeholders = set(re.findall(r"\{\{(\w+)\}\}", TEMPLATE.read_text()))
+documented = set(re.findall(r"\{\{(\w+)\}\}", SKILL.read_text()))
+if placeholders != documented:
+    fail(f"{SKILL}: placeholders out of sync with {TEMPLATE.name}: "
+         f"undocumented {sorted(placeholders - documented)}, unused {sorted(documented - placeholders)}")
 
 for path in [SKILLS / "run-stage" / "SKILL.md", AGENTS / "spec-builder.md", AGENTS / "story-creator.md", TEMPLATE, *builders]:
     if MARKER not in path.read_text():
