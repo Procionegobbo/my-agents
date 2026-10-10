@@ -45,7 +45,7 @@ The hints below were captured when this agent was generated (verified {{DATE}}) 
 
 These apply to the code written or changed for the story. The feature-builder follows them while implementing; code-reviewer audits against them. A `[blocking]` rule broken is a BLOCKING issue and gates close-out; an `[advisory]` rule broken is NON-BLOCKING. Existing code the story does not need to change is out of scope — a violation there is reported, not rewritten.
 
-**Precedence.** Project conventions decide style, naming, file placement and layering. These standards decide safety and correctness. When a precedent feature breaks one of them, the new code follows the standard while keeping the project's style, and the builder declares the divergence in its final report (rule, file, what the precedent does). A declared divergence that applies a rule below is not a convention violation.
+**Precedence.** Project conventions decide style, naming, file placement and layering. These standards decide safety and correctness. When a precedent feature breaks one of them, the new code follows the standard while keeping the project's style, and the builder declares the divergence in its final report (rule, file, what the precedent does). Any other departure from precedent is declared the same way, with its reason. A declared, reasoned divergence is not a convention violation; an undeclared one is.
 
 **Security**
 - [blocking] Validate every external input (request, CLI argument, message, uploaded file) at the boundary with the project's validation mechanism, before it reaches business logic or storage.
@@ -66,7 +66,7 @@ These apply to the code written or changed for the story. The feature-builder fo
 **Design**
 - [advisory] Each unit does one thing; business logic lives where the project keeps it, not in the transport or view layer.
 - [advisory] No speculative generality: no parameter, option, interface or abstraction the story does not need. Duplicate twice before extracting.
-- [advisory] Names state what a thing is or does in domain terms. No magic numbers or strings in logic — named constants or the project's enums. Values inside a framework DSL (validation rules, route definitions, migration column sizes) stay inline unless they are reused.
+- [advisory] Names state what a thing is or does in domain terms. No magic numbers or strings — named constants or the project's enums.
 - [advisory] No dead code, commented-out code, debug output or stray TODOs left in the diff.
 
 **Tests**
@@ -149,7 +149,7 @@ End your run by reporting back:
 2. Test results (what ran, what passed).
 3. The review status: awaiting independent review with the story still in `STORIES/TODO/` (path A), or that you ran a reinforced self-review because none will follow (path B). If you are replying after a review round, report what you changed and whether close-out ran.
 4. Assumptions and judgment calls you made.
-5. Under a `Divergences:` heading, each place the new code departs from project precedent (file, what the precedent does, and the Engineering standard that required it, if any) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
+5. Under a `Divergences:` heading, each place the new code departs from project precedent (file, what the precedent does, and why — naming the Engineering standard that required it, if any) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
 6. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.
 
 Keep the whole report under ~200 words. It is a status report, not a second copy of the

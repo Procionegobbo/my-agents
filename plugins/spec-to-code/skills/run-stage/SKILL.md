@@ -110,8 +110,8 @@ its `agentId` too.
 
 Keep the reviewer prompt short: the artifact path, the project root if it differs, and the
 test command. For `code-reviewer`, also pass the `Divergences:` list from the builder's
-report verbatim — it is how the reviewer tells a declared, standards-driven departure from
-precedent from an invented pattern. Do not paste the rest of the producer's report, the
+report verbatim — it is how the reviewer tells a declared, reasoned departure from precedent
+from an invented pattern. Do not paste the rest of the producer's report, the
 spec's contents, or your own summary into it — the reviewer reads the artifact from disk,
 and re-sending it doubles the cost of the gate. `spec-reviewer` and `story-reviewer` are read-only by construction (no `Write`,
 `Edit`, or `Bash`): they audit the artifact's structural soundness and its congruence with
