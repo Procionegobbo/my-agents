@@ -256,7 +256,7 @@ Every feature-builder and `code-reviewer` carry the same **Engineering standards
 - `[blocking]` — a violation is a BLOCKING review issue and keeps the story in `STORIES/TODO/`.
 - `[advisory]` — a violation is reported as NON-BLOCKING.
 
-Project conventions still decide style, naming and layering; the standards decide safety and correctness. When an existing feature breaks a standard, the new code follows the standard in the project's style and the builder declares the divergence in its report. `run-stage` passes that list to `code-reviewer`, so a declared divergence is not flagged as an invented pattern. Existing code the story does not need is never rewritten — wider refactors are suggested in the report.
+Project conventions still decide style, naming and layering; the standards decide safety and correctness. When an existing feature breaks a standard, the new code follows the standard in the project's style and the builder declares the divergence in its report; any other departure from precedent (response envelope, controller style, naming) is declared too, with its reason. `run-stage` passes that list to `code-reviewer`, which accepts a declared divergence whose reason holds and flags an undeclared one as non-blocking. Existing code the story does not need is never rewritten — wider refactors are suggested in the report.
 
 ---
 
