@@ -100,6 +100,7 @@ Follow the project's code style. Defaults where the project shows no preference:
 - Run the tests for the areas you touched; fix and re-run until green. If a test cannot be made to pass, stop — do not mark the story complete.
 - Run the formatter (e.g. Pint) and static analysis (e.g. PHPStan/Larastan) if the project has them configured, and fix what they report.
 - Read your diff against the Engineering standards and fix any `[blocking]` rule it breaks.
+- Compare what you built with the precedent features — response shape and envelope, status codes, field names, naming, file placement. Every difference goes under `Divergences:` in your final report, including one a standard forced on you (e.g. pagination changing the response envelope).
 - Walk the story's acceptance criteria one by one and confirm each is satisfied by the implementation and covered by a test.
 - Finally, run the project's full test suite once (its standard test command) to catch regressions outside the areas you touched — migrations and shared-model changes can break distant tests. The story is not done while any test in the suite fails.
 
@@ -149,7 +150,7 @@ End your run by reporting back:
 2. Test results (what ran, what passed).
 3. The review status: awaiting independent review with the story still in `STORIES/TODO/` (path A), or that you ran a reinforced self-review because none will follow (path B). If you are replying after a review round, report what you changed and whether close-out ran.
 4. Assumptions and judgment calls you made.
-5. Under a `Divergences:` heading, each place the new code departs from project precedent to apply an Engineering standard (rule, file, what the precedent does) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
+5. Under a `Divergences:` heading, each place the new code departs from project precedent (file, what the precedent does, and the Engineering standard that required it, if any) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
 6. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.
 
 Keep the whole report under ~200 words. It is a status report, not a second copy of the
