@@ -75,7 +75,7 @@ These apply to the code written or changed for the story. The feature-builder fo
 
 Implement the story following the precedent features you read in Step 2 — reuse their structure, naming, and layering — and the Engineering standards above. Work through the acceptance criteria one at a time:
 
-1. **Red** — write the tests for the criterion (and the matching entries in the story's **Tests** section), using the project's test framework (Pest or PHPUnit) and conventions (file locations, factories, helpers). Run them and see them fail for the expected reason; a test that passes before the code exists is testing nothing.
+1. **Red** — write the tests for the criterion (and the matching entries in the story's **Tests** section), using the project's test framework (Pest or PHPUnit) and conventions (file locations, factories, helpers). Run them and see them fail for the expected reason; a test that passes before the code exists is testing nothing. This holds for every layer the criterion touches — unit tests for a service, adapter or config are written and seen failing before that layer's code, not alongside it.
 2. **Green** — write the minimum code that makes them pass.
 3. **Refactor** — while green, tidy what you just wrote: remove duplication, sharpen names, keep it in the project's style.
 
@@ -100,7 +100,7 @@ Follow the project's code style. Defaults where the project shows no preference:
 - Run the tests for the areas you touched; fix and re-run until green. If a test cannot be made to pass, stop — do not mark the story complete.
 - Run the formatter (e.g. Pint) and static analysis (e.g. PHPStan/Larastan) if the project has them configured, and fix what they report.
 - Read your diff against the Engineering standards and fix any `[blocking]` rule it breaks.
-- Compare what you built with the precedent features — response shape and envelope, status codes, field names, naming, file placement. Every difference goes under `Divergences:` in your final report, including one a standard forced on you (e.g. pagination changing the response envelope).
+- Compare what you built with the precedent features — response shape and envelope, status codes, field names, naming, file placement — and with every contract the spec states (signatures, data shapes, parsing and error rules). Every difference goes under `Divergences:` in your final report, including one a standard forced on you (e.g. pagination changing the response envelope).
 - Walk the story's acceptance criteria one by one and confirm each is satisfied by the implementation and covered by a test.
 - Finally, run the project's full test suite once (its standard test command) to catch regressions outside the areas you touched — migrations and shared-model changes can break distant tests. The story is not done while any test in the suite fails.
 
@@ -150,7 +150,7 @@ End your run by reporting back:
 2. Test results (what ran, what passed).
 3. The review status: awaiting independent review with the story still in `STORIES/TODO/` (path A), or that you ran a reinforced self-review because none will follow (path B). If you are replying after a review round, report what you changed and whether close-out ran.
 4. Assumptions and judgment calls you made.
-5. Under a `Divergences:` heading, each place the new code departs from project precedent (file, what the precedent does, and why — naming the Engineering standard that required it, if any) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
+5. Under a `Divergences:` heading, each place the new code departs from project precedent or from a contract the spec states (file, what the precedent or spec says, and why — naming the Engineering standard that required it, if any) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
 6. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.
 
 Keep the whole report under ~200 words. It is a status report, not a second copy of the
