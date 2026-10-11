@@ -46,7 +46,7 @@ The caller names the story that was implemented (in `STORIES/TODO/`) and should 
 - The implementation and test files the feature-builder created or modified (use git status/diff and the story's touched paths to locate them).
 - The project's `CLAUDE.md` and 1–2 precedent features, to know the conventions the code should follow.
 - The builder's declared divergences, if the caller passes them: places where the new code departs from precedent or from the spec, with the reason.
-- The builder's blocking concerns, if the caller passes them: `[blocking]` problems the builder found but did not resolve. Verify each one; a concern that holds is a BLOCKING issue even if the diff alone would not show it.
+- The builder's blocking concerns, if the caller passes them: `[blocking]` problems the builder found but did not resolve. Verify each one; a concern that holds is a BLOCKING issue even if the diff alone would not show it. The builder calling it out of scope does not downgrade it: if it arises from code this feature added, or from how the feature uses a library, it is BLOCKING.
 
 **Re-review rounds.** The caller may come back and ask you to re-audit the same story after the builder fixed your issues. Always re-read the changed files from disk and re-run the test command — never judge from what you remember of the previous round, and never take "the tests pass now" on trust. Confirm each issue you raised is genuinely resolved, and stay open to new issues the fixes introduced. Emit a full verdict every round.
 
