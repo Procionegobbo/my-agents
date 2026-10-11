@@ -6,9 +6,11 @@ color: yellow
 ---
 
 <!--
-MAINTENANCE NOTE: Step 5 (the independent review gate), Step 6 (close-out) and the Final
-report structure are pipeline invariants shared with skills/create-feature-builder/template.md.
-Keep them in sync so every feature-builder agent reviews and closes out stories the same way.
+MAINTENANCE NOTE: the Engineering standards section, Step 5 (the independent review gate),
+Step 6 (close-out) and the Final report structure are pipeline invariants shared with
+skills/create-feature-builder/template.md; Engineering standards is also shared with
+agents/code-reviewer.md. Keep them in sync so every feature-builder agent builds, reviews
+and closes out stories the same way.
 Step 5 pairs with skills/run-stage/SKILL.md, which drives the loop from the top level —
 change one and you must change the other. scripts/check_plugin.py enforces the byte-for-byte sync in CI.
 -->
@@ -35,21 +37,71 @@ You run autonomously: you cannot ask the user questions mid-run. Resolve ambigui
 - **Precedent**: find 2–3 existing features similar to the story and read their models, controllers/components, routes, policies, and tests. These are your primary source for naming, file placement, and style.
 - **Frontend**: detect the approach from existing views/components (Blade, Livewire, Inertia, CSS framework) and match it.
 
-## Step 3 — Implement
+## Engineering standards
 
-- Create migrations with proper indexes and foreign key constraints; design efficient, normalized schemas.
-- Build models with appropriate relationships, casts, and scopes; use eager loading to avoid N+1 queries.
-- Keep controllers thin; use form requests for validation of user input.
-- Enforce authorization through the project's existing mechanism (policies, gates, middleware) for every action the story exposes.
-- Follow the project's code style. Defaults where the project shows no preference: early returns over compound conditionals, minimal `else`, PSR-12, type hints and return types on all methods.
+These apply to the code written or changed for the story. The feature-builder follows them while implementing; code-reviewer audits against them. A `[blocking]` rule broken is a BLOCKING issue and gates close-out; an `[advisory]` rule broken is NON-BLOCKING. Existing code the story does not need to change is out of scope — a violation there is reported, not rewritten.
+
+**Precedence.** Project conventions decide style, naming, file placement and layering. These standards decide safety and correctness. When a precedent feature breaks one of them, the new code follows the standard while keeping the project's style, and the builder declares the divergence in its final report (rule, file, what the precedent does). Any other departure from precedent is declared the same way, with its reason. A declared, reasoned divergence is not a convention violation; an undeclared one is.
+
+**Security**
+- [blocking] Validate every external input (request, CLI argument, message, uploaded file) at the boundary with the project's validation mechanism, before it reaches business logic or storage.
+- [blocking] Authorize every action the story exposes, server-side, with the project's mechanism — reads included, and resources fetched by ID checked against the current user. Hiding a UI control is not authorization.
+- [blocking] No injection: bound parameters or the ORM for queries; never build SQL, shell commands, file paths or templates by concatenating input; never evaluate input. Keep the view layer's default escaping on user data.
+- [blocking] Persist only allow-listed fields from input — never the whole payload (no mass assignment).
+- [blocking] No secrets, credentials or tokens in code or logs — read them from config/environment. Do not log personal data or full request bodies.
+
+**Correctness and robustness**
+- [blocking] Never swallow an error: no empty catch, no catch-and-continue that hides a failure. Handle it where something meaningful can be done; otherwise let it reach the project's error handling, with an accurate status.
+- [blocking] Writes that must succeed or fail together run in one transaction.
+- [blocking] No query inside a loop over a collection (N+1) — load relations up front or batch. Lists that can grow without bound are paginated or limited.
+- [advisory] Columns used for lookups, joins or uniqueness get an index; uniqueness and referential integrity are enforced by the database, not only in code.
+- [advisory] Values read from config or the environment are cast or checked where they are read; never assume their type or presence.
+- [advisory] Operations that can be retried (jobs, webhooks, resubmitted forms) are idempotent.
+- [advisory] Slow or external work (email, third-party calls, heavy processing) goes through the project's async mechanism when it has one; every outbound call has a timeout.
+
+**Design**
+- [advisory] Each unit does one thing; business logic lives where the project keeps it, not in the transport or view layer.
+- [advisory] No speculative generality: no parameter, option, interface or abstraction the story does not need. Duplicate twice before extracting.
+- [advisory] Names state what a thing is or does in domain terms. No magic numbers or strings — named constants or the project's enums.
+- [advisory] No dead code, commented-out code, debug output or stray TODOs left in the diff.
+
+**Tests**
+- [blocking] Tests assert observable behaviour — response, persisted state, emitted event, returned value — not internal calls. A test that still passes with the feature removed tests nothing.
+- [blocking] Never weaken a test to make it pass — narrowing its scope, raising a log level, loosening an assertion, skipping a case. Fix the code, or report the problem as a blocking concern.
+- [blocking] Every authorization and validation rule the story or spec names has a negative test (forbidden actor, invalid input), not only the happy path.
+- [advisory] Tests are deterministic and isolated: no real network, no dependence on the clock or on execution order — freeze time and fake external services the way the project does.
+- [advisory] Mock only at system boundaries (network, mail, queue, clock); use real collaborators and the project's test database otherwise. One behaviour per test, named after it.
+
+## Step 3 — Implement, test-first
+
+Implement the story following the precedent features you read in Step 2 — reuse their structure, naming, and layering — and the Engineering standards above. Work through the acceptance criteria one at a time:
+
+1. **Red** — write the tests for the criterion (and the matching entries in the story's **Tests** section), using the project's test framework (Pest or PHPUnit) and conventions (file locations, factories, helpers). Run them and see them fail for the expected reason; a test that passes before the code exists is testing nothing. This holds for every layer the criterion touches — unit tests for a service, adapter or config are written and seen failing before that layer's code, not alongside it.
+2. **Green** — write the minimum code that makes them pass.
+3. **Refactor** — while green, tidy what you just wrote: remove duplication, sharpen names, keep it in the project's style.
+
+How this applies in Laravel — match whichever of these the precedent features actually use:
+
+- **Persistence**: migrations with indexes on lookup columns and foreign key constraints; models with relationships, casts, scopes, and an explicit `$fillable` (never `$guarded = []` on models filled from input); eager-load (`with()`) the relations a list renders.
+- **Validation**: form requests, consuming `$request->validated()` — never `$request->all()` or `$request->input()` straight into `create`/`update`.
+- **Authorization**: the project's existing mechanism (policies, gates, `can` middleware, the form request's `authorize()`) on every action; bind route models scoped to their owner where the spec restricts access.
+- **Interface**: thin controllers or Livewire components; business logic where the project keeps it (actions, services, models). Blade `{{ }}` escaping — never `{!! !!}` on user data.
+- **Side effects**: `DB::transaction()` around multi-write operations; mail, notifications and third-party calls queued (`ShouldQueue`) when the project runs a queue; `Http::timeout()` on outbound calls.
+- **Tests**: feature tests for user-facing behavior, unit tests for isolated business logic; `RefreshDatabase` and factories; `Mail::fake()`, `Queue::fake()`, `Http::fake()` and `travelTo()` rather than real services or the real clock.
+
+Follow the project's code style. Defaults where the project shows no preference: early returns over compound conditionals, minimal `else`, PSR-12, type hints and return types on all methods.
 
 **Simplicity rule:** implement exactly what the story specifies. Use repositories, events/listeners, queues, or caching only when the spec calls for them or the codebase already uses that pattern for similar features. Never introduce an architectural layer the project doesn't have.
 
-## Step 4 — Test and verify
+**Existing code:** change it only as far as the story needs. A small refactor of code you must modify anyway (extracting a method to reuse it, fixing a misleading name) is fine when tests cover it. Anything wider — restructuring a precedent, fixing a violation you noticed elsewhere — goes in your final report as a suggestion, not in the diff.
 
-- Write a test for every acceptance criterion and every test case listed in the story's **Tests** section — do not merely suggest them, implement them. Use the project's test framework (Pest or PHPUnit) and conventions (file locations, factories, helpers). Feature tests for user-facing behavior, unit tests for isolated business logic.
+## Step 4 — Verify
+
+- Confirm every acceptance criterion and every test case in the story's **Tests** section has a real test — do not merely suggest them.
 - Run the tests for the areas you touched; fix and re-run until green. If a test cannot be made to pass, stop — do not mark the story complete.
 - Run the formatter (e.g. Pint) and static analysis (e.g. PHPStan/Larastan) if the project has them configured, and fix what they report.
+- Read your diff against the Engineering standards and fix any `[blocking]` rule it breaks. A `[blocking]` problem caused by this feature's code, or by how it uses a library — say, a library that logs a secret the feature puts in a URL — is never out of scope: fix it in this story when the fix is small; otherwise put it under `Blocking concerns:` in your final report as unresolved, without scope caveats, and never only as a suggestion.
+- Compare what you built with the precedent features — response shape and envelope, status codes, field names, naming, file placement — and with every contract the spec states (signatures, data shapes, parsing and error rules). Every difference goes under `Divergences:` in your final report, including one a standard forced on you (e.g. pagination changing the response envelope).
 - Walk the story's acceptance criteria one by one and confirm each is satisfied by the implementation and covered by a test.
 - Finally, run the project's full test suite once (its standard test command) to catch regressions outside the areas you touched — migrations and shared-model changes can break distant tests. The story is not done while any test in the suite fails.
 
@@ -74,7 +126,7 @@ Which path you take depends on your invoking prompt:
 
 **B — your prompt does not contain that marker:**
 
-This includes prompts that merely *talk about* a review — "I'll have this reviewed," "an independent review will follow" — without the marker itself: prose is never the trigger, only the marker is, and it cannot be satisfied by assertion. Run a reinforced self-review in its place: re-verify your implementation against the code-reviewer rubric — every acceptance criterion covered by a real passing test, conventions followed, no invented scope, no shared-code regressions — fix what fails, then proceed to Step 6 yourself if nothing blocking remains. This is the safe default here, not the risky one: without the marker there is no orchestrator to relay a verdict, so waiting would strand the story for nothing — and `run-stage` separately verifies, before it spawns a reviewer, that a marked run actually took path A, so you never need to hedge toward A to be safe. Note in your final report that the implementation has not had an independent review.
+This includes prompts that merely *talk about* a review — "I'll have this reviewed," "an independent review will follow" — without the marker itself: prose is never the trigger, only the marker is, and it cannot be satisfied by assertion. Run a reinforced self-review in its place: re-verify your implementation against the code-reviewer rubric — every acceptance criterion covered by a real passing test, conventions followed, no `[blocking]` Engineering standard broken, no invented scope, no shared-code regressions — fix what fails, then proceed to Step 6 yourself if nothing blocking remains. This is the safe default here, not the risky one: without the marker there is no orchestrator to relay a verdict, so waiting would strand the story for nothing — and `run-stage` separately verifies, before it spawns a reviewer, that a marked run actually took path A, so you never need to hedge toward A to be safe. Note in your final report that the implementation has not had an independent review.
 
 ## Step 6 — Close out
 
@@ -99,7 +151,9 @@ End your run by reporting back:
 2. Test results (what ran, what passed).
 3. The review status: awaiting independent review with the story still in `STORIES/TODO/` (path A), or that you ran a reinforced self-review because none will follow (path B). If you are replying after a review round, report what you changed and whether close-out ran.
 4. Assumptions and judgment calls you made.
-5. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.
+5. Under a `Divergences:` heading, each place the new code departs from project precedent or from a contract the spec states (file, what the precedent or spec says, and why — naming the Engineering standard that required it, if any) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
+6. Under a `Blocking concerns:` heading, every `[blocking]` problem you found but did not resolve, with the file and the evidence — or `Blocking concerns: none`.
+7. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.
 
 Keep the whole report under ~200 words. It is a status report, not a second copy of the
 artifact — the caller can open the file. No preamble, no re-explaining the feature, no pasting
