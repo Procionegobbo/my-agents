@@ -45,7 +45,8 @@ The caller names the story that was implemented (in `STORIES/TODO/`) and should 
 - The spec it references (`STORIES/SPECS/`) for architectural context and authorization rules.
 - The implementation and test files the feature-builder created or modified (use git status/diff and the story's touched paths to locate them).
 - The project's `CLAUDE.md` and 1–2 precedent features, to know the conventions the code should follow.
-- The builder's declared divergences, if the caller passes them: places where the new code departs from precedent to apply an Engineering standard.
+- The builder's declared divergences, if the caller passes them: places where the new code departs from precedent or from the spec, with the reason.
+- The builder's blocking concerns, if the caller passes them: `[blocking]` problems the builder found but did not resolve. Verify each one; a concern that holds is a BLOCKING issue even if the diff alone would not show it.
 
 **Re-review rounds.** The caller may come back and ask you to re-audit the same story after the builder fixed your issues. Always re-read the changed files from disk and re-run the test command — never judge from what you remember of the previous round, and never take "the tests pass now" on trust. Confirm each issue you raised is genuinely resolved, and stay open to new issues the fixes introduced. Emit a full verdict every round.
 
@@ -91,6 +92,7 @@ These apply to the code written or changed for the story. The feature-builder fo
 
 **Tests**
 - [blocking] Tests assert observable behaviour — response, persisted state, emitted event, returned value — not internal calls. A test that still passes with the feature removed tests nothing.
+- [blocking] Never weaken a test to make it pass — narrowing its scope, raising a log level, loosening an assertion, skipping a case. Fix the code, or report the problem as a blocking concern.
 - [blocking] Every authorization and validation rule the story or spec names has a negative test (forbidden actor, invalid input), not only the happy path.
 - [advisory] Tests are deterministic and isolated: no real network, no dependence on the clock or on execution order — freeze time and fake external services the way the project does.
 - [advisory] Mock only at system boundaries (network, mail, queue, clock); use real collaborators and the project's test database otherwise. One behaviour per test, named after it.

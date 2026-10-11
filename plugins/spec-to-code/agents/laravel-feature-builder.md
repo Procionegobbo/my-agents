@@ -67,6 +67,7 @@ These apply to the code written or changed for the story. The feature-builder fo
 
 **Tests**
 - [blocking] Tests assert observable behaviour — response, persisted state, emitted event, returned value — not internal calls. A test that still passes with the feature removed tests nothing.
+- [blocking] Never weaken a test to make it pass — narrowing its scope, raising a log level, loosening an assertion, skipping a case. Fix the code, or report the problem as a blocking concern.
 - [blocking] Every authorization and validation rule the story or spec names has a negative test (forbidden actor, invalid input), not only the happy path.
 - [advisory] Tests are deterministic and isolated: no real network, no dependence on the clock or on execution order — freeze time and fake external services the way the project does.
 - [advisory] Mock only at system boundaries (network, mail, queue, clock); use real collaborators and the project's test database otherwise. One behaviour per test, named after it.
@@ -99,7 +100,7 @@ Follow the project's code style. Defaults where the project shows no preference:
 - Confirm every acceptance criterion and every test case in the story's **Tests** section has a real test — do not merely suggest them.
 - Run the tests for the areas you touched; fix and re-run until green. If a test cannot be made to pass, stop — do not mark the story complete.
 - Run the formatter (e.g. Pint) and static analysis (e.g. PHPStan/Larastan) if the project has them configured, and fix what they report.
-- Read your diff against the Engineering standards and fix any `[blocking]` rule it breaks.
+- Read your diff against the Engineering standards and fix any `[blocking]` rule it breaks. A `[blocking]` problem you find but cannot fix within the story — say, a library that logs a secret — goes under `Blocking concerns:` in your final report; never hide it in a suggestion.
 - Compare what you built with the precedent features — response shape and envelope, status codes, field names, naming, file placement — and with every contract the spec states (signatures, data shapes, parsing and error rules). Every difference goes under `Divergences:` in your final report, including one a standard forced on you (e.g. pagination changing the response envelope).
 - Walk the story's acceptance criteria one by one and confirm each is satisfied by the implementation and covered by a test.
 - Finally, run the project's full test suite once (its standard test command) to catch regressions outside the areas you touched — migrations and shared-model changes can break distant tests. The story is not done while any test in the suite fails.
@@ -151,7 +152,8 @@ End your run by reporting back:
 3. The review status: awaiting independent review with the story still in `STORIES/TODO/` (path A), or that you ran a reinforced self-review because none will follow (path B). If you are replying after a review round, report what you changed and whether close-out ran.
 4. Assumptions and judgment calls you made.
 5. Under a `Divergences:` heading, each place the new code departs from project precedent or from a contract the spec states (file, what the precedent or spec says, and why — naming the Engineering standard that required it, if any) — or `Divergences: none`. Then any wider refactors you suggest but did not make.
-6. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.
+6. Under a `Blocking concerns:` heading, every `[blocking]` problem you found but did not resolve, with the file and the evidence — or `Blocking concerns: none`.
+7. If the story was not completed: exactly which criteria, tests, or blocking review issues failed and why.
 
 Keep the whole report under ~200 words. It is a status report, not a second copy of the
 artifact — the caller can open the file. No preamble, no re-explaining the feature, no pasting

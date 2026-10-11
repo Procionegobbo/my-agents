@@ -109,9 +109,10 @@ Invoke the matching reviewer with `run_in_background: false`, telling it the art
 its `agentId` too.
 
 Keep the reviewer prompt short: the artifact path, the project root if it differs, and the
-test command. For `code-reviewer`, also pass the `Divergences:` list from the builder's
-report verbatim — it is how the reviewer tells a declared, reasoned departure from precedent
-from an invented pattern. Do not paste the rest of the producer's report, the
+test command. For `code-reviewer`, also pass the `Divergences:` and `Blocking concerns:`
+lists from the builder's report verbatim — the first is how the reviewer tells a declared,
+reasoned departure from an invented pattern; the second puts problems the diff cannot show
+(a library that logs a secret) in front of the reviewer. Do not paste the rest of the producer's report, the
 spec's contents, or your own summary into it — the reviewer reads the artifact from disk,
 and re-sending it doubles the cost of the gate. `spec-reviewer` and `story-reviewer` are read-only by construction (no `Write`,
 `Edit`, or `Bash`): they audit the artifact's structural soundness and its congruence with
@@ -147,7 +148,7 @@ findings under `VERDICT: APPROVED` has approved the work.
 2. `SendMessage` the **reviewer** at its recorded `agentId` to re-audit the updated
    artifact. Continuing it keeps its own prior findings in view, so it can confirm each was
    addressed rather than re-deriving the rubric from scratch. If the builder's fix reply
-   declares new divergences, pass them along.
+   declares new divergences or blocking concerns, pass them along.
 
 **Round caps.** Stop as soon as you get `VERDICT: APPROVED`, and otherwise:
 
