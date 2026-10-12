@@ -59,9 +59,10 @@ Naming an agent directly instead of going through `run-stage` has the same effec
 |---|---|
 | `stories-init` | One-time setup — creates the `STORIES/` folder structure, adding only what is missing. `run-stage` also does this automatically when the folder is missing. |
 | `run-stage` | Runs one pipeline stage (`spec-builder`, `story-creator`, or a `<stack>-feature-builder`) together with its independent review gate — or without it, if you ask. This is the intended entry point for every stage. |
+| `run-feature` | Runs a whole spec to completion: `story-creator` (if its stories don't exist yet) followed by every resulting `<stack>-feature-builder` story, in dependency order, each through its own review gate — without invoking `run-stage` once per story. Picks up where it left off if some stories are already done, and skips only what a failed story actually blocks. |
 | `create-feature-builder` | Generates a `<stack>-feature-builder` agent tailored to the current repo — detects the stack, explores the codebase, and writes the agent into `.claude/agents/`. Automates the manual process described in *Adding a new feature-builder*. |
 
-Invoke them as slash commands. Installed as a plugin, skills are namespaced: `/spec-to-code:stories-init`, `/spec-to-code:run-stage`, `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, they are `/stories-init`, `/run-stage` and `/create-feature-builder`.
+Invoke them as slash commands. Installed as a plugin, skills are namespaced: `/spec-to-code:stories-init`, `/spec-to-code:run-stage`, `/spec-to-code:run-feature`, `/spec-to-code:create-feature-builder`. Copied manually into `.claude/skills/`, they are `/stories-init`, `/run-stage`, `/run-feature` and `/create-feature-builder`.
 
 ---
 
@@ -137,6 +138,14 @@ Your idea / draft
 ```
 
 Each of the three producer/reviewer pairs is driven by the `run-stage` skill — launch every stage with it (`/spec-to-code:run-stage <agent> on <path>`) so the review gate actually runs. Add `no review` to the request to run a stage without it.
+
+To run everything from a completed spec down to `STORIES/COMPLETED/` in one go — `story-creator` plus every story's `feature-builder`, each through its gate — use `run-feature` instead of calling `run-stage` once per story:
+
+```
+> /spec-to-code:run-feature on STORIES/SPECS/user-search.md
+```
+
+It is a convenience loop around `run-stage`, not a different pipeline: re-running it on a spec that already has some stories done or some stuck only attempts what is still pending.
 
 ---
 
@@ -267,11 +276,14 @@ Project conventions still decide style, naming and layering; the standards decid
 > Initialize the stories workspace
 > Write my draft in STORIES/SPECS/asset-collection.md
 > /spec-to-code:run-stage spec-builder on the asset-collection draft
-> /spec-to-code:run-stage story-creator on the asset-collection spec
 
-# Implementation
+# Implementation — story by story
+> /spec-to-code:run-stage story-creator on the asset-collection spec
 > /spec-to-code:run-stage laravel-feature-builder on STORIES/TODO/asset-collection-001-model.md
 > /spec-to-code:run-stage laravel-feature-builder on STORIES/TODO/asset-collection-002-crud.md
+
+# Implementation — or the whole spec in one go
+> /spec-to-code:run-feature on STORIES/SPECS/asset-collection.md
 ```
 
 ---
@@ -326,6 +338,7 @@ Because story files are prefixed per spec, two branches never create files with 
 - **Upgrading from 4.x** — `stories-init` is now a skill, not an agent. With a plugin install nothing changes for you. With a manual copy, delete the old `.claude/agents/stories-init.md` and copy `skills/stories-init/`. Builders generated before 4.2 still carry the old multi-example `description`; re-run `create-feature-builder` to refresh them.
 - **Upgrading to 5.1** — `spec-builder` and `story-creator` now declare a `tools` allowlist, and story Technical Notes reference spec items instead of copying them. With a manual copy, update `story-creator.md` and `story-reviewer.md` together: the old reviewer would flag reference-style notes as thin. Stories written before 5.1 keep working unchanged. 5.1.1 stops `story-creator` from parking the spec's feature-wide Success Criteria (whole suite, lint, no new dependency) in one story, which made that story unable to close before the others; update both files together here too.
 - **Upgrading to 6.0** — feature-builders now work test-first and carry the shared Engineering standards, and `code-reviewer` blocks on `[blocking]` standards it previously did not check, so a story that used to pass can now be sent back. Builders generated before 6.0 lack the new sections: re-run `create-feature-builder` in each project to regenerate them. With a manual copy, update `code-reviewer.md`, `run-stage` and every feature-builder together.
+- **Upgrading to 6.1** — adds the `run-feature` skill, which loops `run-stage` over a whole spec's stories. Purely additive: it calls the existing `run-stage` protocol for each stage rather than duplicating it, so nothing else changes. With a manual copy, add `skills/run-feature/` alongside the others.
 - **Producer token cost** — both Opus producers are tuned for runtime cost, not just prompt length. Without a `tools` field a subagent inherits every tool of the parent session, MCP schemas included, and re-sends them on every turn, so both declare only what they use. `spec-builder` reads files by line range and batches lookups, states each fact once across the spec's sections, and applies review fixes as targeted edits instead of rewriting the file. `story-creator` reads only the spec, never the codebase. On a real frontend spec, an A/B run of `spec-builder` cost about 25% less (fewer output tokens, 43% fewer cache reads) with equivalent spec quality.
 - **Consistency check** — `python scripts/check_plugin.py` (run by CI on every PR) verifies the manifests, every agent's frontmatter, a 400-character budget on agent descriptions (they are loaded into every session), that each `*-feature-builder.md` matches the template from Step 5 to the end, that the Engineering standards section is identical in the template, every feature-builder and `code-reviewer` (with every rule tagged `[blocking]` or `[advisory]`), that the template's placeholders match the table in the `create-feature-builder` skill, and that the review-gate marker is present on both sides of the loop.
 - **Git tracking** — `.gitkeep` files ensure the empty folders are committed. They can be removed once real files exist in each folder.
