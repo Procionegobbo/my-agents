@@ -17,6 +17,8 @@ APPEND = re.compile(
 
 command = json.load(sys.stdin).get("tool_input", {}).get("command", "").strip()
 if MOVE.fullmatch(command) or APPEND.fullmatch(command):
+    # Visible with `claude --debug`; tells an hook approval apart from the classifier's.
+    print(f"allow_story_closeout: approved `{command}`", file=sys.stderr)
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
